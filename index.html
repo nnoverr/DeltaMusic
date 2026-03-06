@@ -930,10 +930,8 @@
 
     <script>
         // ── CONFIG ──────────────────────────────────────
-        // Auto-detect environment and choose proxy
-        const IS_LOCAL = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
-        const IS_VERCEL = location.hostname.endsWith('.vercel.app');
-        const PROXY = IS_LOCAL ? '/proxy?url=' : IS_VERCEL ? '/api/proxy?url=' : null;
+        // Universal proxy endpoint — works locally (server.mjs) and on Vercel
+        const PROXY = '/api/proxy?url=';
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw0d4RGncqnwKla0E7YK06xyAD2He5-w-08DZ1QvkbEofRnEg8pv73jLDtdJaXBbucrFA/exec';
         const DB_NAME = 'DeltaMusicDB', DB_VER = 3, STORE = 'tracks';
 
@@ -1162,9 +1160,6 @@
 
         // ── HITMOTOP ─────────────────────────────────────
         async function hitmotop(q) {
-            if (!PROXY) {
-                throw new Error('Поиск работает только локально. Запустите server.py на устройстве.');
-            }
             const target = q
                 ? `https://rus.hitmotop.com/search?q=${encodeURIComponent(q)}`
                 : `https://rus.hitmotop.com/`;

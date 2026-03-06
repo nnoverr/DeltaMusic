@@ -71,8 +71,8 @@ const server = http.createServer((req, res) => {
 
     const reqUrl = new URL(req.url, `http://localhost:${PORT}`);
 
-    // /proxy?url=... endpoint
-    if (reqUrl.pathname === '/proxy') {
+    // ── Proxy endpoint (/proxy or /api/proxy) ──────────────────────────
+    if (reqUrl.pathname === '/proxy' || reqUrl.pathname === '/api/proxy') {
         const target = reqUrl.searchParams.get('url');
         if (!target) { res.writeHead(400); res.end('Missing url param'); return; }
         proxyRequest(target, res);
