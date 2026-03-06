@@ -772,6 +772,50 @@
             border-radius: 8px;
             background: var(--surface);
         }
+
+        .badge-ios {
+            background: #007AFF;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-left: 6px;
+        }
+
+        .install-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .cmd-box {
+            background: #000;
+            padding: 12px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 12px;
+            color: #0F0;
+            margin: 10px 0;
+            word-break: break-all;
+            position: relative;
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: #fff;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            cursor: pointer;
+        }
     </style>
 </head>
 
@@ -847,7 +891,33 @@
             <div class="tlist" id="import-log" style="gap:6px;margin-top:12px"></div>
         </div>
 
-        <!-- SCREEN: EXECUTOR -->
+        <!-- SCREEN: INSTALLER -->
+        <div id="scr-install" class="screen">
+            <h1 class="screen-title padded">Installer <span class="badge-ios">iOS / Win</span></h1>
+            <p class="section-sub">Setup DeltaMusic as a native app on your device.</p>
+
+            <div class="install-card">
+                <h3>📱 iOS (Shortcuts + a-Shell)</h3>
+                <p style="font-size:13px;margin:8px 0;opacity:0.8">1. Paste this into <b>a-Shell</b> to install:</p>
+                <div class="cmd-box">
+                    <span id="ios-cmd">curl -L
+                        https://raw.githubusercontent.com/nnoverr/DeltaMusic/main/pwa/setup_ios.sh | bash</span>
+                    <button class="copy-btn" onclick="copyIosCmd()">Copy</button>
+                </div>
+                <p style="font-size:12px;opacity:0.6">2. Use <b>Shortcuts app</b> to create a launcher that runs this
+                    command in a-Shell.</p>
+            </div>
+
+            <div class="install-card">
+                <h3>💻 Windows (.exe)</h3>
+                <p style="font-size:13px;margin:8px 0;opacity:0.8">Download the standalone installer to get a desktop
+                    shortcut and auto-start.</p>
+                <a href="https://github.com/nnoverr/DeltaMusic/raw/main/pwa/DeltaInstaller.exe" class="btn-main"
+                    style="text-decoration:none;display:inline-flex">
+                    <span class="material-symbols-outlined">download</span> Download Installer (.exe)
+                </a>
+            </div>
+        </div>
         <div id="scr-executor" class="screen">
             <h1 class="screen-title padded">Executor</h1>
             <p class="section-sub">Upload track to Google Sheets database.</p>
@@ -912,14 +982,12 @@
             <span class="material-symbols-outlined">library_music</span>
             <span>Library</span>
         </button>
-        <button class="nav-btn" data-screen="scr-download">
-            <span class="material-symbols-outlined">cloud_download</span>
-            <span>Download</span>
-        </button>
-        <button class="nav-btn" data-screen="scr-executor">
-            <span class="material-symbols-outlined">upload_file</span>
-            <span>Executor</span>
-        </button>
+        <button class="nav-btn" data-screen="scr-download"><span
+                class="material-symbols-outlined">cloud_download</span><span>Import</span></button>
+        <button class="nav-btn" data-screen="scr-install"><span
+                class="material-symbols-outlined">install_desktop</span><span>Install</span></button>
+        <button class="nav-btn" data-screen="scr-executor"><span
+                class="material-symbols-outlined">clinical_notes</span><span>Admin</span></button>
     </nav>
 
     <!-- TOAST -->
@@ -1374,6 +1442,10 @@
 
         // Register SW
         if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => { });
+        function copyIosCmd() {
+            const cmd = document.getElementById('ios-cmd').textContent;
+            navigator.clipboard.writeText(cmd).then(() => toast('Command copied!'));
+        }
     </script>
 </body>
 
