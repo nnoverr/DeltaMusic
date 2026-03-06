@@ -1,0 +1,1376 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>DeltaMusic</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#050505">
+    <meta name="mobile-web-app-capable" content="yes">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg1: #050505;
+            --bg2: #1A0B2E;
+            --pink: #E94057;
+            --purple: #8A2387;
+            --orange: #F27121;
+            --surface: rgba(255, 255, 255, 0.08);
+            --border: rgba(255, 255, 255, 0.15);
+            --text: #FFFFFF;
+            --muted: #999;
+            --nav-h: 68px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(180deg, var(--bg1) 0%, var(--bg2) 100%) fixed;
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+            user-select: none;
+        }
+
+        /* ---- SCREENS ---- */
+        .content {
+            padding-bottom: calc(var(--nav-h) + 100px);
+        }
+
+        .screen {
+            display: none;
+            padding: 0 16px;
+            animation: fadeIn .25s;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        .sub {
+            display: none;
+            animation: fadeIn .2s;
+        }
+
+        .sub.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(6px);
+            }
+
+            to {
+                opacity: 1;
+                transform: none;
+            }
+        }
+
+        /* ---- HEADER ---- */
+        .lib-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 48px 8px 16px;
+        }
+
+        .screen-title {
+            font-size: 32px;
+            font-weight: 700;
+        }
+
+        .screen-title.padded {
+            padding-top: 48px;
+        }
+
+        .delta {
+            font-size: 34px;
+            font-weight: 900;
+            color: var(--pink);
+            display: inline-block;
+            rotate: 33deg;
+        }
+
+        /* ---- LIBRARY SUB TABS ---- */
+        .subtab-bar {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding-bottom: 10px;
+            margin-bottom: 14px;
+            scrollbar-width: none;
+            align-items: center;
+        }
+
+        .subtab-bar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .stab {
+            background: transparent;
+            border: 1px solid transparent;
+            color: var(--muted);
+            padding: 8px 16px;
+            border-radius: 50px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: .2s;
+        }
+
+        .stab.active {
+            background: var(--border);
+            border-color: rgba(255, 255, 255, .3);
+            color: var(--text);
+        }
+
+        .stab-spacer {
+            flex: 1;
+        }
+
+        .shuffle-btn {
+            background: none;
+            border: none;
+            color: var(--muted);
+            cursor: pointer;
+            padding: 8px;
+            display: flex;
+        }
+
+        .shuffle-btn.on {
+            color: var(--pink);
+        }
+
+        /* ---- SEARCH ---- */
+        .search-wrap {
+            position: relative;
+            margin-bottom: 14px;
+            display: none;
+        }
+
+        .search-wrap.visible {
+            display: block;
+        }
+
+        .search-wrap input {
+            width: 100%;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 13px 16px 13px 46px;
+            border-radius: 50px;
+            font-size: 15px;
+            outline: none;
+        }
+
+        .search-wrap input:focus {
+            border-color: var(--pink);
+        }
+
+        .search-ic {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--muted);
+        }
+
+        /* ---- TRACK ROW ---- */
+        .tlist {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .trow {
+            display: flex;
+            align-items: center;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 12px;
+            cursor: pointer;
+            transition: background .2s;
+        }
+
+        .trow:active {
+            background: rgba(255, 255, 255, .15);
+        }
+
+        .tcover {
+            width: 48px;
+            height: 48px;
+            border-radius: 10px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, var(--purple), var(--pink));
+        }
+
+        .tcover.online {
+            background: linear-gradient(135deg, #1A2980, #26D0CE);
+        }
+
+        .tinfo {
+            flex: 1;
+            margin-left: 12px;
+            overflow: hidden;
+        }
+
+        .ttitle {
+            font-size: 15px;
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .tartist {
+            font-size: 12px;
+            color: var(--muted);
+            margin-top: 3px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .taction {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+            flex-shrink: 0;
+        }
+
+        .taction .material-symbols-outlined {
+            font-size: 22px;
+            color: var(--pink);
+        }
+
+        .taction.del .material-symbols-outlined {
+            color: rgba(244, 67, 54, .7);
+        }
+
+        /* ---- ARTIST GROUP ---- */
+        .ag {
+            margin-bottom: 24px;
+        }
+
+        .ag-head {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            gap: 14px;
+        }
+
+        .ag-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: var(--surface);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .ag-name {
+            font-size: 17px;
+            font-weight: 600;
+        }
+
+        /* ---- FOR YOU CARD ---- */
+        .ay-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            overflow: hidden;
+            margin-bottom: 16px;
+        }
+
+        .ay-photo {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .ay-photo-placeholder {
+            width: 100%;
+            height: 180px;
+            background: linear-gradient(135deg, var(--purple), var(--pink));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .ay-body {
+            padding: 14px;
+        }
+
+        .ay-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+
+        /* ---- CHART ---- */
+        .chart-area {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 50vh;
+        }
+
+        .chart-circle {
+            width: 190px;
+            height: 190px;
+            border-radius: 50%;
+            border: 4px solid rgba(233, 64, 87, .5);
+            background: var(--surface);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            gap: 8px;
+            animation: glow 2s infinite alternate;
+        }
+
+        @keyframes glow {
+            from {
+                box-shadow: 0 0 20px rgba(233, 64, 87, .2);
+            }
+
+            to {
+                box-shadow: 0 0 40px rgba(156, 39, 176, .3);
+                border-color: rgba(156, 39, 176, .5);
+            }
+        }
+
+        .chart-label {
+            font-size: 16px;
+            font-weight: 600;
+            text-align: center;
+            padding: 0 16px;
+        }
+
+        /* ---- FORMS ---- */
+        .form-body {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            margin-bottom: 20px;
+        }
+
+        .fgroup label {
+            display: block;
+            font-size: 13px;
+            color: var(--muted);
+            margin-bottom: 6px;
+            margin-left: 4px;
+        }
+
+        .finput {
+            width: 100%;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 14px 16px;
+            border-radius: 16px;
+            font-size: 15px;
+            outline: none;
+            font-family: inherit;
+        }
+
+        .finput:focus {
+            border-color: var(--purple);
+        }
+
+        textarea.finput {
+            height: 110px;
+            resize: none;
+        }
+
+        /* ---- BUTTONS ---- */
+        .btn-main {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 50px;
+            background: linear-gradient(90deg, var(--purple), var(--pink));
+            color: #fff;
+            font-size: 16px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: transform .1s, opacity .2s;
+            font-family: inherit;
+        }
+
+        .btn-main:active {
+            transform: scale(.98);
+        }
+
+        .btn-main:disabled {
+            opacity: .5;
+            cursor: not-allowed;
+        }
+
+        /* ---- STATUS / PROGRESS ---- */
+        .status-box {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 14px;
+            font-size: 13px;
+            color: var(--muted);
+        }
+
+        .prog-wrap {
+            width: 100%;
+            height: 4px;
+            background: var(--border);
+            border-radius: 2px;
+            margin-top: 12px;
+            overflow: hidden;
+        }
+
+        .prog-bar {
+            height: 100%;
+            background: var(--pink);
+            width: 0%;
+            transition: width .3s;
+        }
+
+        .status-success {
+            background: rgba(76, 175, 80, .2);
+            color: #81C784;
+            padding: 8px 14px;
+            border-radius: 10px;
+            margin-top: 8px;
+            font-size: 13px;
+        }
+
+        .status-error {
+            background: rgba(244, 67, 54, .2);
+            color: #E57373;
+            padding: 8px 14px;
+            border-radius: 10px;
+            margin-top: 8px;
+            font-size: 13px;
+        }
+
+        /* ---- SPINNER ---- */
+        .spin {
+            width: 28px;
+            height: 28px;
+            border: 3px solid rgba(255, 255, 255, .1);
+            border-top-color: var(--pink);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .spinner-center {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100px;
+        }
+
+        .empty {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 180px;
+            color: var(--muted);
+            font-size: 17px;
+        }
+
+        /* ---- PLAYER ---- */
+        .player {
+            position: fixed;
+            bottom: calc(var(--nav-h) + 12px);
+            left: 12px;
+            right: 12px;
+            z-index: 200;
+        }
+
+        .player-mini {
+            background: rgba(20, 8, 40, .85);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 12px 16px;
+            display: none;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, .4);
+            cursor: pointer;
+        }
+
+        .player-mini.visible {
+            display: flex;
+        }
+
+        .player-mini-info {
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .p-title {
+            font-size: 15px;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .p-artist {
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        .p-play-btn {
+            background: none;
+            border: none;
+            color: var(--text);
+            cursor: pointer;
+            display: flex;
+            padding: 4px;
+        }
+
+        .player-full {
+            position: fixed;
+            inset: 0;
+            background: rgba(5, 2, 14, .95);
+            backdrop-filter: blur(24px);
+            z-index: 300;
+            display: none;
+            flex-direction: column;
+            padding: 20px 20px calc(var(--nav-h) + 20px);
+            overflow-y: auto;
+        }
+
+        .player-full.visible {
+            display: flex;
+        }
+
+        .pf-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .pf-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+            display: flex;
+        }
+
+        .pf-btn.pink {
+            color: var(--pink);
+        }
+
+        .pf-cover {
+            width: 260px;
+            height: 260px;
+            border-radius: 24px;
+            margin: 0 auto 28px;
+            background: linear-gradient(135deg, var(--purple), var(--pink));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 20px 40px rgba(233, 64, 87, .3);
+            overflow: hidden;
+        }
+
+        .pf-cover img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .pf-title {
+            font-size: 24px;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 6px;
+        }
+
+        .pf-artist {
+            font-size: 15px;
+            color: var(--muted);
+            text-align: center;
+            margin-bottom: 28px;
+        }
+
+        .seekbar {
+            width: 100%;
+            -webkit-appearance: none;
+            height: 4px;
+            background: rgba(255, 255, 255, .25);
+            border-radius: 2px;
+            outline: none;
+            margin-bottom: 8px;
+        }
+
+        .seekbar::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: var(--pink);
+            cursor: pointer;
+        }
+
+        .times {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: var(--muted);
+            margin-bottom: 32px;
+        }
+
+        .pf-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 28px;
+            margin-top: auto;
+        }
+
+        .ctrl {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--text);
+            display: flex;
+            padding: 8px;
+        }
+
+        .ctrl .material-symbols-outlined {
+            font-size: 36px;
+        }
+
+        .ctrl.big {
+            background: var(--pink);
+            border-radius: 50%;
+            width: 68px;
+            height: 68px;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 8px 24px rgba(233, 64, 87, .4);
+        }
+
+        .ctrl.big .material-symbols-outlined {
+            font-size: 40px;
+        }
+
+        /* ---- BOTTOM NAV ---- */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: var(--nav-h);
+            background: rgba(5, 2, 14, .95);
+            backdrop-filter: blur(12px);
+            border-top: 1px solid var(--border);
+            display: flex;
+            z-index: 100;
+        }
+
+        .nav-btn {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: none;
+            border: none;
+            color: var(--muted);
+            cursor: pointer;
+            gap: 4px;
+            transition: color .2s;
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+
+        .nav-btn.active {
+            color: var(--pink);
+        }
+
+        .nav-btn .material-symbols-outlined {
+            font-size: 24px;
+        }
+
+        .nav-btn span:last-child {
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        /* ---- TOAST ---- */
+        .toast {
+            position: fixed;
+            top: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, .85);
+            color: #fff;
+            padding: 10px 22px;
+            border-radius: 50px;
+            font-size: 14px;
+            z-index: 9999;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity .3s;
+            backdrop-filter: blur(10px);
+            white-space: nowrap;
+        }
+
+        .toast.show {
+            opacity: 1;
+        }
+
+        /* ---- MISC ---- */
+        .section-sub {
+            font-size: 13px;
+            color: var(--muted);
+            margin-bottom: 20px;
+        }
+
+        .log-entry {
+            padding: 6px 10px;
+            font-size: 12px;
+            border-radius: 8px;
+            background: var(--surface);
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="content">
+
+        <!-- SCREEN: LIBRARY -->
+        <div id="scr-library" class="screen active">
+            <div class="lib-header">
+                <h1 class="screen-title">Library</h1>
+                <span class="delta">Δ</span>
+            </div>
+
+            <!-- Sub-tab bar -->
+            <div class="subtab-bar" id="subtab-bar">
+                <button class="stab active" data-sub="tracks">Tracks</button>
+                <button class="stab" data-sub="artists">Artists</button>
+                <button class="stab" data-sub="foryou">For You</button>
+                <button class="stab" data-sub="chart">Your Chart</button>
+                <button class="stab" data-sub="online">Online</button>
+                <div class="stab-spacer"></div>
+                <button class="shuffle-btn" id="shuffle-btn"><span
+                        class="material-symbols-outlined">shuffle</span></button>
+            </div>
+
+            <!-- Search (visible only on Online) -->
+            <div class="search-wrap" id="search-wrap">
+                <span class="material-symbols-outlined search-ic">search</span>
+                <input type="text" id="search-input" placeholder="Search songs or artists…">
+            </div>
+
+            <!-- Sub screens -->
+            <div id="sub-tracks" class="sub active">
+                <div class="tlist" id="list-tracks"></div>
+            </div>
+            <div id="sub-artists" class="sub">
+                <div id="list-artists"></div>
+            </div>
+            <div id="sub-foryou" class="sub">
+                <div class="tlist" id="list-foryou"></div>
+            </div>
+            <div id="sub-chart" class="sub">
+                <div class="chart-area">
+                    <div class="chart-circle" id="chart-btn">
+                        <span class="material-symbols-outlined" style="font-size:40px;color:var(--pink)">shuffle</span>
+                        <span class="chart-label">Play Your Chart</span>
+                    </div>
+                </div>
+            </div>
+            <div id="sub-online" class="sub">
+                <div class="tlist" id="list-online"></div>
+            </div>
+        </div>
+
+        <!-- SCREEN: DOWNLOAD -->
+        <div id="scr-download" class="screen">
+            <h1 class="screen-title padded">Download</h1>
+            <p class="section-sub">Paste Yandex HTML or track list (Artist - Title)</p>
+            <div class="form-body">
+                <textarea class="finput" id="import-text" placeholder="Paste here…"></textarea>
+                <button class="btn-main" id="import-btn">
+                    <span class="material-symbols-outlined">cloud_download</span> Start Import
+                </button>
+            </div>
+            <div class="status-box" id="import-status" style="display:none">
+                <div class="spin"></div>
+                <span id="import-status-text">Loading…</span>
+            </div>
+            <div class="prog-wrap" id="prog-wrap" style="display:none">
+                <div class="prog-bar" id="prog-bar"></div>
+            </div>
+            <div class="tlist" id="import-log" style="gap:6px;margin-top:12px"></div>
+        </div>
+
+        <!-- SCREEN: EXECUTOR -->
+        <div id="scr-executor" class="screen">
+            <h1 class="screen-title padded">Executor</h1>
+            <p class="section-sub">Upload track to Google Sheets database.</p>
+            <div class="form-body">
+                <div class="fgroup"><label>Artist (Executor)</label><input type="text" class="finput" id="ex-artist"
+                        placeholder="e.g. Scandroid"></div>
+                <div class="fgroup"><label>Password</label><input type="password" class="finput" id="ex-pass"
+                        placeholder="Secret key"></div>
+                <div class="fgroup"><label>Photo Card URL (optional)</label><input type="url" class="finput"
+                        id="ex-photo" placeholder="https://…"></div>
+                <div class="fgroup"><label>Track Title</label><input type="text" class="finput" id="ex-title"
+                        placeholder="e.g. Neo-Tokyo"></div>
+                <div class="fgroup"><label>Track Download URL</label><input type="url" class="finput" id="ex-url"
+                        placeholder="Direct MP3 link"></div>
+            </div>
+            <div id="ex-msg"></div>
+            <button class="btn-main" id="ex-btn" style="margin-top:14px">
+                <span class="material-symbols-outlined">upload_file</span> Upload Track
+            </button>
+            <div class="tlist" id="ex-log" style="gap:6px;margin-top:16px"></div>
+        </div>
+
+    </div>
+
+    <!-- PLAYER -->
+    <div class="player">
+        <div class="player-mini" id="player-mini">
+            <div class="player-mini-info">
+                <div class="p-title" id="mini-title">Not Playing</div>
+                <div class="p-artist" id="mini-artist">DeltaMusic</div>
+            </div>
+            <button class="p-play-btn" id="mini-play-btn">
+                <span class="material-symbols-outlined" id="mini-play-ic">play_arrow</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- FULL PLAYER -->
+    <div class="player-full" id="player-full">
+        <div class="pf-header">
+            <button class="pf-btn pink" id="pf-collapse"><span
+                    class="material-symbols-outlined">keyboard_arrow_down</span></button>
+            <button class="pf-btn" id="pf-close"><span class="material-symbols-outlined">close</span></button>
+        </div>
+        <div class="pf-cover" id="pf-cover"><span class="material-symbols-outlined"
+                style="font-size:80px;color:rgba(255,255,255,.4)">music_note</span></div>
+        <div class="pf-title" id="pf-title">Not Playing</div>
+        <div class="pf-artist" id="pf-artist">DeltaMusic</div>
+        <input type="range" class="seekbar" id="seekbar" min="0" max="100" value="0">
+        <div class="times"><span id="t-cur">0:00</span><span id="t-dur">0:00</span></div>
+        <div class="pf-controls">
+            <button class="ctrl" id="pf-prev"><span class="material-symbols-outlined">skip_previous</span></button>
+            <button class="ctrl big" id="pf-play"><span class="material-symbols-outlined"
+                    id="pf-play-ic">play_arrow</span></button>
+            <button class="ctrl" id="pf-next"><span class="material-symbols-outlined">skip_next</span></button>
+        </div>
+    </div>
+
+    <!-- NAV -->
+    <nav class="bottom-nav">
+        <button class="nav-btn active" data-screen="scr-library">
+            <span class="material-symbols-outlined">library_music</span>
+            <span>Library</span>
+        </button>
+        <button class="nav-btn" data-screen="scr-download">
+            <span class="material-symbols-outlined">cloud_download</span>
+            <span>Download</span>
+        </button>
+        <button class="nav-btn" data-screen="scr-executor">
+            <span class="material-symbols-outlined">upload_file</span>
+            <span>Executor</span>
+        </button>
+    </nav>
+
+    <!-- TOAST -->
+    <div class="toast" id="toast"></div>
+
+    <!-- AUDIO -->
+    <audio id="audio" preload="metadata"></audio>
+
+    <script>
+        // ── CONFIG ──────────────────────────────────────
+        const PROXY = '/proxy?url='; // local proxy - bypasses Cloudflare
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw0d4RGncqnwKla0E7YK06xyAD2He5-w-08DZ1QvkbEofRnEg8pv73jLDtdJaXBbucrFA/exec';
+        const DB_NAME = 'DeltaMusicDB', DB_VER = 3, STORE = 'tracks';
+
+        // ── STATE ────────────────────────────────────────
+        let db = null;
+        let playlist = [], idx = 0, shuffle = false;
+        let blobUrl = null;
+
+        // ── DB ───────────────────────────────────────────
+        function openDB() {
+            return new Promise((res, rej) => {
+                const r = indexedDB.open(DB_NAME, DB_VER);
+                r.onupgradeneeded = e => {
+                    const d = e.target.result;
+                    if (!d.objectStoreNames.contains(STORE)) {
+                        const s = d.createObjectStore(STORE, { keyPath: 'id' });
+                        s.createIndex('artist', 'artist', { unique: false });
+                    }
+                };
+                r.onsuccess = e => { db = e.target.result; res(db); };
+                r.onerror = rej;
+            });
+        }
+        function dbAll() {
+            if (!db) return Promise.resolve([]);
+            return new Promise(res => {
+                const r = db.transaction(STORE, 'readonly').objectStore(STORE).getAll();
+                r.onsuccess = () => res(r.result || []);
+                r.onerror = () => res([]);
+            });
+        }
+        function dbSave(t) {
+            if (!db) return Promise.resolve();
+            return new Promise(res => {
+                const tx = db.transaction(STORE, 'readwrite');
+                tx.objectStore(STORE).put(t);
+                tx.oncomplete = res;
+                tx.onerror = res;
+            });
+        }
+        function dbDel(id) {
+            if (!db) return Promise.resolve();
+            return new Promise(res => {
+                const tx = db.transaction(STORE, 'readwrite');
+                tx.objectStore(STORE).delete(id);
+                tx.oncomplete = res;
+                tx.onerror = res;
+            });
+        }
+
+        // ── TOAST ────────────────────────────────────────
+        let toastT;
+        function toast(msg) {
+            const el = document.getElementById('toast');
+            el.textContent = msg;
+            el.classList.add('show');
+            clearTimeout(toastT);
+            toastT = setTimeout(() => el.classList.remove('show'), 3000);
+        }
+
+        // ── NAVIGATION ───────────────────────────────────
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+                document.getElementById(btn.dataset.screen).classList.add('active');
+                if (btn.dataset.screen === 'scr-library') renderTracks();
+            });
+        });
+
+        // ── LIBRARY SUB-TABS ─────────────────────────────
+        let activeSubTab = 'tracks';
+        document.querySelectorAll('.stab').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.stab').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                document.querySelectorAll('.sub').forEach(s => s.classList.remove('active'));
+                document.getElementById('sub-' + btn.dataset.sub).classList.add('active');
+                activeSubTab = btn.dataset.sub;
+
+                const sw = document.getElementById('search-wrap');
+                if (btn.dataset.sub === 'online') {
+                    sw.classList.add('visible');
+                    if (!document.getElementById('list-online').hasChildNodes()) searchOnline('');
+                } else {
+                    sw.classList.remove('visible');
+                }
+                if (btn.dataset.sub === 'tracks') renderTracks();
+                if (btn.dataset.sub === 'artists') renderArtists();
+                if (btn.dataset.sub === 'foryou') loadForYou();
+            });
+        });
+
+        // Shuffle
+        document.getElementById('shuffle-btn').addEventListener('click', () => {
+            shuffle = !shuffle;
+            document.getElementById('shuffle-btn').classList.toggle('on', shuffle);
+            toast(shuffle ? 'Shuffle ON' : 'Shuffle OFF');
+        });
+
+        // Chart
+        document.getElementById('chart-btn').addEventListener('click', playChart);
+
+        // Search debounce
+        let debT;
+        document.getElementById('search-input').addEventListener('input', e => {
+            clearTimeout(debT);
+            debT = setTimeout(() => e.target.value.trim() && searchOnline(e.target.value.trim()), 900);
+        });
+
+        // ── TRACKS VIEW ──────────────────────────────────
+        async function renderTracks() {
+            const list = document.getElementById('list-tracks');
+            list.innerHTML = '';
+            const tracks = await dbAll();
+            const sorted = tracks.sort((a, b) => (a.artist + a.title).localeCompare(b.artist + b.title));
+            if (!sorted.length) { list.innerHTML = '<div class="empty">Library is empty</div>'; return; }
+            sorted.forEach((t, i) => {
+                list.appendChild(makeRow(t, false,
+                    () => playList(sorted, i),
+                    async () => { if (confirm('Delete?')) { await dbDel(t.id); toast('Deleted'); renderTracks(); } }
+                ));
+            });
+        }
+
+        // ── ARTISTS VIEW ─────────────────────────────────
+        async function renderArtists() {
+            const cont = document.getElementById('list-artists');
+            cont.innerHTML = '';
+            const tracks = await dbAll();
+            if (!tracks.length) { cont.innerHTML = '<div class="empty">No artists</div>'; return; }
+            const map = {};
+            tracks.forEach(t => { if (!map[t.artist]) map[t.artist] = []; map[t.artist].push(t); });
+            Object.keys(map).sort().forEach(name => {
+                const g = document.createElement('div'); g.className = 'ag';
+                g.innerHTML = `<div class="ag-head"><div class="ag-avatar"><span class="material-symbols-outlined">person</span></div><div class="ag-name">${name}</div></div>`;
+                const tl = document.createElement('div'); tl.className = 'tlist';
+                map[name].forEach((t, i) => tl.appendChild(makeRow(t, false, () => playList(map[name], i))));
+                g.appendChild(tl);
+                cont.appendChild(g);
+            });
+        }
+
+        // ── FOR YOU ──────────────────────────────────────
+        let forYouLoaded = false;
+        async function loadForYou() {
+            if (forYouLoaded) return;
+            const cont = document.getElementById('list-foryou');
+            cont.innerHTML = '<div class="spinner-center"><div class="spin"></div></div>';
+            try {
+                const res = await fetch(SCRIPT_URL + '?action=getCards');
+                if (!res.ok) throw new Error('Status ' + res.status);
+                const data = await res.json();
+                cont.innerHTML = '';
+                if (!data || !data.length) {
+                    cont.innerHTML = '<div class="empty">No data from spreadsheet</div>';
+                    return;
+                }
+                forYouLoaded = true;
+                // API schema: { executor: "Artist", photo: "url1,url2,...", track: "url1,url2,..." }
+                data.sort(() => Math.random() - .5).forEach(item => {
+                    const name = item.executor || 'Unknown';
+                    const photos = (item.photo || '').split(',').map(s => s.trim()).filter(Boolean);
+                    const trackUrls = (item.track || '').split(',').map(s => s.trim()).filter(Boolean);
+
+                    const card = document.createElement('div');
+                    card.className = 'ay-card';
+
+                    const photoHtml = photos.length
+                        ? `<img class="ay-photo" src="${photos[photos.length - 1]}" onerror="this.style.display='none'">`
+                        : `<div class="ay-photo-placeholder"><span class="material-symbols-outlined" style="font-size:60px;color:rgba(255,255,255,.5)">person</span></div>`;
+
+                    let rows = '';
+                    trackUrls.forEach((url, i) => {
+                        // Extract a readable title from URL filename
+                        const filename = decodeURIComponent(url.split('/').pop().split('?')[0]);
+                        const titleClean = filename.replace(/\.(mp3|m4a|ogg|flac)$/i, '').replace(/_/g, ' ').replace(/-/g, '–');
+                        rows += `<div class="trow" onclick="playRemote('${esc(titleClean)}','${esc(name)}','${esc(url)}')">
+                            <div class="tcover online"><span class="material-symbols-outlined">music_note</span></div>
+                            <div class="tinfo"><div class="ttitle">${titleClean}</div><div class="tartist">${name}</div></div>
+                            <button class="taction" onclick="event.stopPropagation();dlAndSave('${esc(titleClean)}','${esc(name)}','${esc(url)}')">
+                                <span class="material-symbols-outlined">cloud_download</span>
+                            </button>
+                        </div>`;
+                    });
+
+                    card.innerHTML = `${photoHtml}<div class="ay-body"><div class="ay-title">${name}</div><div class="tlist">${rows}</div></div>`;
+                    cont.appendChild(card);
+                });
+            } catch (e) {
+                cont.innerHTML = `<div class="empty">Error: ${e.message}</div>`;
+                console.error('ForYou error:', e);
+            }
+        }
+        function esc(s) { return String(s || '').replace(/'/g, "\\'"); }
+
+        // ── CHART ────────────────────────────────────────
+        async function playChart() {
+            toast('Loading chart…');
+            try {
+                const res = await hitmotop('');
+                if (!res.length) { toast('No chart data'); return; }
+                const sh = res.sort(() => Math.random() - .5).slice(0, 20);
+                playList(sh, 0);
+                toast('Playing Your Chart');
+            } catch (e) { toast('Chart unavailable'); }
+        }
+
+        // ── ONLINE SEARCH ────────────────────────────────
+        async function searchOnline(q) {
+            const cont = document.getElementById('list-online');
+            cont.innerHTML = '<div class="spinner-center"><div class="spin"></div></div>';
+            try {
+                const res = await hitmotop(q);
+                cont.innerHTML = '';
+                if (!res.length) { cont.innerHTML = '<div class="empty">No results</div>'; return; }
+                res.forEach((t, i) => {
+                    cont.appendChild(makeRow(t, true,
+                        () => playList(res, i),
+                        () => dlAndSave(t.title, t.artist, t.filePath)
+                    ));
+                });
+            } catch (e) { cont.innerHTML = '<div class="empty">Network error</div>'; }
+        }
+
+        // ── HITMOTOP ─────────────────────────────────────
+        async function hitmotop(q) {
+            const target = q
+                ? `https://rus.hitmotop.com/search?q=${encodeURIComponent(q)}`
+                : `https://rus.hitmotop.com/`;
+            const html = await fetch(PROXY + encodeURIComponent(target)).then(r => r.text());
+            // Hitmotop stores track JSON in data-musmeta attribute:
+            // data-musmeta='{"artist":"...","title":"...","url":"...mp3","img":"..."}'
+            const re = /data-musmeta='([^']+)'/g;
+            const out = [];
+            let m;
+            while ((m = re.exec(html))) {
+                try {
+                    const raw = m[1].replace(/\\\//g, '/');
+                    const d = JSON.parse(raw);
+                    if (d.url && d.title && d.artist) {
+                        out.push({
+                            id: 'net_' + Math.random().toString(36).slice(2),
+                            title: d.title,
+                            artist: d.artist,
+                            filePath: d.url,
+                            cover: d.img || null,
+                            genre: 'Online',
+                            isOnline: true
+                        });
+                    }
+                } catch (e) { /* skip malformed */ }
+            }
+            return out;
+        }
+        // ── DOWNLOAD & SAVE ──────────────────────────────
+        async function dlAndSave(title, artist, url) {
+            toast('Downloading: ' + title + '…');
+            try {
+                const blob = await fetch(PROXY + encodeURIComponent(url)).then(r => { if (!r.ok) throw new Error('fail'); return r.blob(); });
+                await dbSave({ id: 'loc_' + Date.now(), title, artist, filePath: url, genre: 'Online', blob });
+                toast('Saved: ' + title);
+                if (activeSubTab === 'tracks') renderTracks();
+            } catch (e) { toast('Error: ' + e.message); }
+        }
+        function playRemote(title, artist, url) {
+            playList([{ id: 'tmp', title, artist, filePath: url, isOnline: true }], 0);
+            dlAndSave(title, artist, url);
+        }
+
+        // ── TRACK ROW ────────────────────────────────────
+        function makeRow(t, isOnline, onClick, onAction) {
+            const row = document.createElement('div'); row.className = 'trow';
+            row.onclick = onClick;
+            const coverCls = isOnline ? 'tcover online' : 'tcover';
+            const icon = isOnline ? 'public' : 'music_note';
+            const actionHtml = onAction
+                ? `<button class="taction${isOnline ? '' : ' del'}"><span class="material-symbols-outlined">${isOnline ? 'cloud_download' : 'delete'}</span></button>`
+                : '';
+            row.innerHTML = `<div class="${coverCls}"><span class="material-symbols-outlined">${icon}</span></div><div class="tinfo"><div class="ttitle">${t.title}</div><div class="tartist">${t.artist}</div></div>${actionHtml}`;
+            if (onAction) {
+                const btn = row.querySelector('.taction');
+                if (btn) btn.onclick = e => { e.stopPropagation(); onAction(); };
+            }
+            return row;
+        }
+
+        // ── IMPORT TAB ───────────────────────────────────
+        document.getElementById('import-btn').addEventListener('click', async () => {
+            const text = document.getElementById('import-text').value.trim();
+            if (!text) { toast('Input is empty'); return; }
+            const statusBox = document.getElementById('import-status');
+            const statusText = document.getElementById('import-status-text');
+            const progWrap = document.getElementById('prog-wrap');
+            const progBar = document.getElementById('prog-bar');
+            const log = document.getElementById('import-log');
+            const btn = document.getElementById('import-btn');
+            log.innerHTML = '';
+            statusBox.style.display = 'flex';
+            progWrap.style.display = 'block';
+            progBar.style.width = '0%';
+            btn.disabled = true;
+
+            let list = [];
+            if (text.includes('data-title="')) {
+                const re = /data-title="(.*?)".*?data-artist="(.*?)"/g;
+                let m;
+                while ((m = re.exec(text))) list.push({ title: m[1].trim(), artist: m[2].trim() });
+            } else {
+                text.split('\n').forEach(line => {
+                    const p = line.trim().split(' - ');
+                    if (p.length >= 2) list.push({ artist: p[0].trim(), title: p.slice(1).join(' - ').trim() });
+                });
+            }
+
+            if (!list.length) { addLog('Could not parse any tracks.', false); btn.disabled = false; return; }
+            addLog(`Found ${list.length} tracks. Searching…`, true);
+
+            let ok = 0;
+            for (let i = 0; i < list.length; i++) {
+                const q = list[i].artist + ' ' + list[i].title;
+                statusText.textContent = `(${i + 1}/${list.length}) ${q}`;
+                try {
+                    const res = await hitmotop(q);
+                    if (res.length) {
+                        await dlAndSave(res[0].title, res[0].artist, res[0].filePath);
+                        addLog('✓ ' + res[0].artist + ' – ' + res[0].title, true);
+                        ok++;
+                    } else { addLog('✗ Not found: ' + q, false); }
+                } catch (e) { addLog('✗ Error: ' + q, false); }
+                progBar.style.width = ((i + 1) / list.length * 100) + '%';
+                await new Promise(r => setTimeout(r, 700));
+            }
+            statusText.textContent = `Done! Saved ${ok} / ${list.length} tracks.`;
+            btn.disabled = false;
+        });
+        function addLog(msg, ok) {
+            const d = document.createElement('div');
+            d.className = 'log-entry';
+            d.style.color = ok ? '#81C784' : '#E57373';
+            d.textContent = msg;
+            document.getElementById('import-log').appendChild(d);
+        }
+
+        // ── EXECUTOR TAB ─────────────────────────────────
+        document.getElementById('ex-btn').addEventListener('click', async () => {
+            const artist = document.getElementById('ex-artist').value.trim();
+            const pass = document.getElementById('ex-pass').value.trim();
+            const photo = document.getElementById('ex-photo').value.trim();
+            const title = document.getElementById('ex-title').value.trim();
+            const url = document.getElementById('ex-url').value.trim();
+            const msgEl = document.getElementById('ex-msg');
+            if (!artist || !pass || !title || !url) { exMsg('Fill all required fields', false); return; }
+            document.getElementById('ex-btn').disabled = true;
+            exMsg('Sending…', true);
+            try {
+                const r = await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ action: 'upload', artist, password: pass, photoUrl: photo, title, url })
+                });
+                const text = await r.text();
+                exMsg(r.ok && text.includes('Success') ? 'Uploaded successfully!' : 'Server: ' + text, r.ok);
+                if (r.ok) { document.getElementById('ex-title').value = ''; document.getElementById('ex-url').value = ''; }
+            } catch (e) { exMsg('Network error: ' + e.message, false); }
+            document.getElementById('ex-btn').disabled = false;
+        });
+        function exMsg(msg, ok) {
+            const el = document.getElementById('ex-msg');
+            el.className = ok ? 'status-success' : 'status-error';
+            el.textContent = msg;
+            el.style.display = 'block';
+            const log = document.getElementById('ex-log');
+            const d = document.createElement('div'); d.className = 'log-entry';
+            d.style.color = ok ? '#81C784' : '#E57373';
+            d.textContent = '[' + new Date().toLocaleTimeString() + '] ' + msg;
+            log.prepend(d);
+        }
+
+        // ── PLAYER ───────────────────────────────────────
+        const audio = document.getElementById('audio');
+
+        function playList(list, i) {
+            if (!list || !list.length) return;
+            playlist = list; idx = i;
+            playCurrent();
+        }
+        async function playCurrent() {
+            const t = playlist[idx];
+            document.getElementById('mini-title').textContent = t.title;
+            document.getElementById('mini-artist').textContent = t.artist;
+            document.getElementById('pf-title').textContent = t.title;
+            document.getElementById('pf-artist').textContent = t.artist;
+            document.getElementById('player-mini').classList.add('visible');
+
+            if (blobUrl) { URL.revokeObjectURL(blobUrl); blobUrl = null; }
+            if (t.blob) { blobUrl = URL.createObjectURL(t.blob); audio.src = blobUrl; }
+            else { audio.src = PROXY + encodeURIComponent(t.filePath); }
+
+            try { await audio.play(); } catch (e) { }
+            if ('mediaSession' in navigator) {
+                navigator.mediaSession.metadata = new MediaMetadata({ title: t.title, artist: t.artist });
+            }
+        }
+        function playNext() { idx = shuffle ? Math.floor(Math.random() * playlist.length) : (idx + 1) % playlist.length; playCurrent(); }
+        function playPrev() { idx = (idx - 1 + playlist.length) % playlist.length; playCurrent(); }
+
+        const togglePlay = () => audio.paused ? audio.play() : audio.pause();
+        audio.addEventListener('play', () => { document.getElementById('mini-play-ic').textContent = 'pause'; document.getElementById('pf-play-ic').textContent = 'pause'; });
+        audio.addEventListener('pause', () => { document.getElementById('mini-play-ic').textContent = 'play_arrow'; document.getElementById('pf-play-ic').textContent = 'play_arrow'; });
+        audio.addEventListener('ended', playNext);
+        audio.addEventListener('timeupdate', () => {
+            if (!audio.duration) return;
+            document.getElementById('seekbar').value = audio.currentTime / audio.duration * 100;
+            document.getElementById('t-cur').textContent = fmt(audio.currentTime);
+        });
+        audio.addEventListener('loadedmetadata', () => document.getElementById('t-dur').textContent = fmt(audio.duration));
+        document.getElementById('seekbar').addEventListener('input', e => { if (audio.duration) audio.currentTime = e.target.value / 100 * audio.duration; });
+        document.getElementById('mini-play-btn').addEventListener('click', e => { e.stopPropagation(); togglePlay(); });
+        document.getElementById('pf-play').addEventListener('click', togglePlay);
+        document.getElementById('pf-next').addEventListener('click', playNext);
+        document.getElementById('pf-prev').addEventListener('click', playPrev);
+        document.getElementById('player-mini').addEventListener('click', () => { document.getElementById('player-full').classList.add('visible'); });
+        document.getElementById('pf-collapse').addEventListener('click', () => document.getElementById('player-full').classList.remove('visible'));
+        document.getElementById('pf-close').addEventListener('click', () => { audio.pause(); audio.src = ''; document.getElementById('player-full').classList.remove('visible'); document.getElementById('player-mini').classList.remove('visible'); });
+        if ('mediaSession' in navigator) {
+            navigator.mediaSession.setActionHandler('play', () => audio.play());
+            navigator.mediaSession.setActionHandler('pause', () => audio.pause());
+            navigator.mediaSession.setActionHandler('nexttrack', playNext);
+            navigator.mediaSession.setActionHandler('previoustrack', playPrev);
+        }
+        function fmt(s) { if (!s || isNaN(s)) return '0:00'; const m = Math.floor(s / 60), sec = Math.floor(s % 60); return m + ':' + (sec < 10 ? '0' : '') + sec; }
+
+        // ── INIT ─────────────────────────────────────────
+        openDB().then(() => renderTracks()).catch(() => renderTracks());
+
+        // Register SW
+        if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => { });
+    </script>
+</body>
+
+</html>
