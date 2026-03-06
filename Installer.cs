@@ -35,6 +35,9 @@ public class DeltaInstaller {
             Console.WriteLine("Updating files...");
             string zipPath = Path.Combine(APP_DIR, "repo.zip");
 
+            // Fix SSL/TLS error by enabling TLS 1.2 (3072)
+            ServicePointManager.SecurityProtocol = (SecurityProtocolType)3072;
+
             using (WebClient client = new WebClient()) {
                 client.DownloadFile(REPO_ZIP, zipPath);
             }
