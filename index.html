@@ -933,6 +933,7 @@
         // Universal proxy endpoint — works locally (server.mjs) and on Vercel
         const PROXY = '/api/proxy?url=';
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw0d4RGncqnwKla0E7YK06xyAD2He5-w-08DZ1QvkbEofRnEg8pv73jLDtdJaXBbucrFA/exec';
+        const APP_VER = '2.1.2 Opt';
         const DB_NAME = 'DeltaMusicDB', DB_VER = 3, STORE = 'tracks';
 
         // ── STATE ────────────────────────────────────────
@@ -1163,7 +1164,9 @@
             const target = q
                 ? `https://rus.hitmotop.com/search?q=${encodeURIComponent(q)}`
                 : `https://rus.hitmotop.com/`;
-            const html = await fetch(PROXY + encodeURIComponent(target)).then(r => r.text());
+            const res = await fetch(PROXY + encodeURIComponent(target), { signal: AbortSignal.timeout(10000) });
+            if (!res.ok) throw new Error('Proxy error ' + res.status);
+            const html = await res.text();
             // Hitmotop stores track JSON in data-musmeta attribute:
             // data-musmeta='{"artist":"...","title":"...","url":"...mp3","img":"..."}'
             const re = /data-musmeta='([^']+)'/g;
