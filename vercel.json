@@ -3,7 +3,12 @@
     "buildCommand": null,
     "outputDirectory": ".",
     "framework": null,
-    "rewrites": [],
+    "rewrites": [
+        {
+            "source": "/api/proxy",
+            "destination": "/api/proxy.js"
+        }
+    ],
     "headers": [
         {
             "source": "/(.*)",

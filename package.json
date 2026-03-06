@@ -1,0 +1,11 @@
+{
+    "name": "deltamusic-pwa",
+    "version": "2.1.2",
+    "description": "DeltaMusic PWA - Optimized Stable Version",
+    "main": "index.html",
+    "scripts": {
+        "start": "python3 server.py"
+    },
+    "dependencies": {},
+    "devDependencies": {}
+}
