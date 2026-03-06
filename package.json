@@ -1,11 +1,28 @@
 {
-    "name": "deltamusic-pwa",
+    "name": "deltamusic",
     "version": "2.1.2",
-    "description": "DeltaMusic PWA - Optimized Stable Version",
-    "main": "index.html",
+    "description": "DeltaMusic PWA Desktop",
+    "main": "main-electron.js",
+    "author": "nnoverr",
     "scripts": {
-        "start": "python3 server.py"
+        "start": "electron .",
+        "build": "electron-builder"
+    },
+    "build": {
+        "appId": "com.deltamusic.app",
+        "productName": "DeltaMusic",
+        "win": {
+            "target": "portable",
+            "icon": "icon-512.png"
+        },
+        "files": [
+            "**/*",
+            "!dist/*"
+        ]
     },
     "dependencies": {},
-    "devDependencies": {}
+    "devDependencies": {
+        "electron": "^30.0.0",
+        "electron-builder": "^24.13.3"
+    }
 }
