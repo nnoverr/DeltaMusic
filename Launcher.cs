@@ -23,7 +23,20 @@ public class DeltaMusicApp : Form {
 
         trayIcon = new NotifyIcon();
         trayIcon.Text = "DeltaMusic Server";
-        trayIcon.Icon = this.Icon; // Use form icon
+        
+        // Load icon from file if available, else default
+        string iconPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "app.ico");
+        if (File.Exists(iconPath)) {
+            try {
+                trayIcon.Icon = new Icon(iconPath);
+                this.Icon = trayIcon.Icon;
+            } catch {
+                trayIcon.Icon = SystemIcons.Application;
+            }
+        } else {
+            trayIcon.Icon = SystemIcons.Application;
+        }
+        
         trayIcon.Visible = true;
 
         ContextMenu contextMenu = new ContextMenu();
@@ -37,6 +50,12 @@ public class DeltaMusicApp : Form {
 
     private void StartServer() {
         try {
+            string serverPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "server.py");
+            if (!File.Exists(serverPath)) {
+                MessageBox.Show("Error: 'server.py' not found in " + AppDomain.CurrentDomain.BaseDirectory);
+                return;
+            }
+
             serverProcess = new Process();
             serverProcess.StartInfo.FileName = "python.exe";
             serverProcess.StartInfo.Arguments = "server.py";
@@ -45,7 +64,7 @@ public class DeltaMusicApp : Form {
             serverProcess.StartInfo.UseShellExecute = false;
             serverProcess.Start();
         } catch (Exception ex) {
-            MessageBox.Show("Failed to start server: " + ex.Message);
+            MessageBox.Show("Failed to start server: " + ex.Message + "\n\nEnsure Python is installed and in your PATH.");
         }
     }
 
@@ -55,7 +74,7 @@ public class DeltaMusicApp : Form {
 
     protected override void OnClosing(CancelEventArgs e) {
         if (serverProcess != null && !serverProcess.HasExited) {
-            serverProcess.Kill();
+            try { serverProcess.Kill(); } catch {}
         }
         trayIcon.Visible = false;
         base.OnClosing(e);

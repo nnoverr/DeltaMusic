@@ -11,6 +11,8 @@ public class DeltaInstaller {
     private static string FOLDER_NAME = "DeltaMusic-main";
     private static string APP_DIR = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DeltaMusic");
     private static string DESKTOP_PATH = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+    private static string EXE_PATH = Path.Combine(APP_DIR, "DeltaMusic.exe");
+    private static string ICON_PATH = Path.Combine(APP_DIR, "app.ico");
 
     [STAThread]
     public static void Main() {
@@ -59,7 +61,13 @@ public class DeltaInstaller {
             // Create Shortcut
             CreateShortcut();
 
+            // Auto-launch
+            if (File.Exists(EXE_PATH)) {
+                Process.Start(new ProcessStartInfo(EXE_PATH) { WorkingDirectory = APP_DIR });
+            }
+
             MessageBox.Show("Installation Complete!\n\nDeltaMusic shortcut has been created on your Desktop.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            Application.Exit();
         } catch (Exception ex) {
             MessageBox.Show("Installation Error: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
@@ -67,17 +75,15 @@ public class DeltaInstaller {
 
     private static void CreateShortcut() {
         string shortcutPath = Path.Combine(DESKTOP_PATH, "DeltaMusic.lnk");
-        string exePath = Path.Combine(APP_DIR, "DeltaMusic.exe");
-        string iconPath = Path.Combine(APP_DIR, "app.ico");
         
-        // Use PowerShell to create the shortcut (safest way without adding COM references to CSC)
+        // Use PowerShell to create the shortcut
         string psCommand = string.Format(
             "$s = (New-Object -ComObject WScript.Shell).CreateShortcut('{0}'); " +
             "$s.TargetPath = '{1}'; " +
             "$s.WorkingDirectory = '{2}'; " +
-            "$s.IconLocation = '{3}'; " +
+            "$s.IconLocation = '{3},0'; " +
             "$s.Save()", 
-            shortcutPath, exePath, APP_DIR, iconPath
+            shortcutPath, EXE_PATH, APP_DIR, ICON_PATH
         );
         RunPowerShell(psCommand);
     }
