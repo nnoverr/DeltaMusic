@@ -898,14 +898,20 @@
 
             <div class="install-card">
                 <h3>📱 iOS (Shortcuts + a-Shell)</h3>
-                <p style="font-size:13px;margin:8px 0;opacity:0.8">1. Paste this into <b>a-Shell</b> to install:</p>
+                <p style="font-size:13px;margin:8px 0;opacity:0.8">1. Paste into <b>a-Shell</b> (One-time setup):</p>
                 <div class="cmd-box">
                     <span id="ios-cmd">curl -L
-                        https://raw.githubusercontent.com/nnoverr/DeltaMusic/main/pwa/setup_ios.sh | bash</span>
+                        https://raw.githubusercontent.com/nnoverr/DeltaMusic/main/pwa/setup_ios.sh > setup.sh; sh
+                        setup.sh</span>
                     <button class="copy-btn" onclick="copyIosCmd()">Copy</button>
                 </div>
-                <p style="font-size:12px;opacity:0.6">2. Use <b>Shortcuts app</b> to create a launcher that runs this
-                    command in a-Shell.</p>
+                <p style="font-size:13px;margin:8px 0;opacity:0.8">2. Create <b>Apple Shortcut</b> (One-click launch):
+                </p>
+                <ul style="font-size:12px;opacity:0.8;padding-left:20px;margin-top:5px">
+                    <li>Add <b>"Execute Command"</b> (a-Shell) with: <code>python3 DeltaMusic/pwa/server.py</code></li>
+                    <li>Add <b>"Open URL"</b> with: <code>http://localhost:8080</code></li>
+                    <li>Add to <b>Home Screen</b>.</li>
+                </ul>
             </div>
 
             <div class="install-card">

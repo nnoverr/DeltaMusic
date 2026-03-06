@@ -1,6 +1,5 @@
-#!/bin/bash
-# DeltaMusic iOS "Native-Feel" Setup (v2.1.2)
-# Это скрипт для автоматизации через приложение Shortcuts и a-Shell.
+#!/bin/sh
+# DeltaMusic iOS Setup (v2.1.2)
 
 echo "✦ DeltaMusic: Starting Local Host..."
 
