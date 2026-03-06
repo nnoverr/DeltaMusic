@@ -5,6 +5,7 @@ DeltaMusic iOS Server
 Затем откройте Safari: http://localhost:8080
 """
 import http.server
+import socketserver
 import urllib.request
 import urllib.parse
 import os, mimetypes, json
@@ -20,6 +21,9 @@ MIME = {
     '.png':  'image/png',
     '.webmanifest': 'application/manifest+json',
 }
+
+class ThreadingSimpleServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
+    pass
 
 class Handler(http.server.BaseHTTPRequestHandler):
     def log_message(self, format, *args):
@@ -39,13 +43,14 @@ class Handler(http.server.BaseHTTPRequestHandler):
         parsed = urllib.parse.urlparse(self.path)
         params = urllib.parse.parse_qs(parsed.query)
 
-        # ── Proxy endpoint ──────────────────────────────
-        if parsed.path == '/proxy':
+        # ── Proxy endpoint (supports both /proxy and /api/proxy) ──
+        if parsed.path in ('/proxy', '/api/proxy'):
             target = params.get('url', [None])[0]
             if not target:
                 self.send_error(400, 'Missing ?url=')
                 return
             try:
+                # Use standard stealth headers
                 req = urllib.request.Request(target, headers={
                     'User-Agent': (
                         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
@@ -57,7 +62,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
                     'Referer': 'https://rus.hitmotop.com/',
                     'Connection': 'keep-alive',
                 })
-                with urllib.request.urlopen(req, timeout=15) as resp:
+                with urllib.request.urlopen(req, timeout=10) as resp:
                     data = resp.read()
                     ct = resp.headers.get('Content-Type', 'application/octet-stream')
                     self.send_response(200)
@@ -67,7 +72,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
                     self.end_headers()
                     self.wfile.write(data)
             except Exception as e:
-                self.send_error(502, str(e))
+                self.send_error(502, f"Proxy Error: {str(e)}")
             return
 
         # ── Static files ────────────────────────────────
@@ -95,34 +100,37 @@ class Handler(http.server.BaseHTTPRequestHandler):
         self.wfile.write(data)
 
     def do_POST(self):
-        # Pass-through POST for Google Apps Script
         parsed = urllib.parse.urlparse(self.path)
         params = urllib.parse.parse_qs(parsed.query)
-        target = params.get('url', [None])[0]
-        if not target:
-            self.send_error(400, 'Missing ?url=')
-            return
-        length = int(self.headers.get('Content-Length', 0))
-        body = self.rfile.read(length)
-        try:
-            req = urllib.request.Request(target, data=body, method='POST', headers={
-                'Content-Type': 'text/plain;charset=utf-8',
-                'User-Agent': 'Mozilla/5.0',
-            })
-            with urllib.request.urlopen(req, timeout=15) as resp:
-                data = resp.read()
-                self.send_response(200)
-                self.send_header('Content-Type', 'text/plain')
-                self.send_cors()
-                self.end_headers()
-                self.wfile.write(data)
-        except Exception as e:
-            self.send_error(502, str(e))
+        # Support /proxy and /api/proxy for POST as well
+        if parsed.path in ('/proxy', '/api/proxy'):
+            target = params.get('url', [None])[0]
+            if not target:
+                self.send_error(400, 'Missing ?url=')
+                return
+            length = int(self.headers.get('Content-Length', 0))
+            body = self.rfile.read(length)
+            try:
+                req = urllib.request.Request(target, data=body, method='POST', headers={
+                    'Content-Type': 'text/plain;charset=utf-8',
+                    'User-Agent': 'Mozilla/5.0',
+                })
+                with urllib.request.urlopen(req, timeout=15) as resp:
+                    data = resp.read()
+                    self.send_response(200)
+                    self.send_header('Content-Type', 'text/plain')
+                    self.send_cors()
+                    self.end_headers()
+                    self.wfile.write(data)
+            except Exception as e:
+                self.send_error(502, str(e))
+        else:
+            self.send_error(404)
 
 if __name__ == '__main__':
-    print(f"\n  ✦ DeltaMusic iOS Server")
-    print(f"  ── Open in Safari: http://localhost:{PORT}\n")
-    with http.server.HTTPServer(('0.0.0.0', PORT), Handler) as httpd:
+    print(f"\n   DeltaMusic Multi-threaded iOS Server")
+    print(f"   -- Open in Safari: http://localhost:{PORT}\n")
+    with ThreadingSimpleServer(('0.0.0.0', PORT), Handler) as httpd:
         try:
             httpd.serve_forever()
         except KeyboardInterrupt:
