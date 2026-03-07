@@ -492,8 +492,8 @@ function createTrackRow(track, isOnline, onClick, onAction) {
 // Downloader Helpers
 // ==========================================
 async function fetchHitmotopDirect(query) {
-    let target = `https://box.hitplayer.ru/?s=${encodeURIComponent(query)}`;
-    if (!query) target = `https://box.hitplayer.ru/?s=`; // Default
+    let target = `https://rus.hitmotop.com/search?q=${encodeURIComponent(query)}`;
+    if (!query) target = `https://rus.hitmos.fm/collection/7270195`; // Default
 
     const url = CONFIG.PROXY + encodeURIComponent(target);
     const res = await fetch(url);

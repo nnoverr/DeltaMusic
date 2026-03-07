@@ -1236,8 +1236,8 @@
         // ── HITMOTOP ─────────────────────────────────────
         async function hitmotop(q) {
             const target = q
-                ? `https://box.hitplayer.ru/?s=${encodeURIComponent(q)}`
-                : `https://box.hitplayer.ru/`;
+                ? `https://rus.hitmotop.com/search?q=${encodeURIComponent(q)}`
+                : `https://rus.hitmotop.com/`;
             const res = await fetch(PROXY + encodeURIComponent(target), { signal: AbortSignal.timeout(10000) });
             if (!res.ok) throw new Error('Proxy error ' + res.status);
             const html = await res.text();
