@@ -1243,13 +1243,12 @@
             const html = await res.text();
             // Hitmotop stores track JSON in data-musmeta attribute:
             // data-musmeta='{"artist":"...","title":"...","url":"...mp3","img":"..."}'
-            const re = /data-musmeta='([^']+)'/g;
+            const re = /data-musmeta='(.*?)'/g;
             const out = [];
             let m;
             while ((m = re.exec(html))) {
                 try {
-                    const raw = m[1].replace(/\\\//g, '/');
-                    const d = JSON.parse(raw);
+                    const d = JSON.parse(m[1]);
                     if (d.url && d.title && d.artist) {
                         out.push({
                             id: 'net_' + Math.random().toString(36).slice(2),

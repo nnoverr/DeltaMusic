@@ -499,18 +499,23 @@ async function fetchHitmotopDirect(query) {
     const res = await fetch(url);
     const html = await res.text();
 
-    const regex = /<li class="tracks__item">.*?<div class="track__title"[^>]*>\s*([^<]+?)\s*<\/div>.*?<div class="track__full-artist"[^>]*>\s*([^<]+?)\s*<\/div>.*?<a class="track__download-btn"[^>]*href="([^"]+?\.mp3)"/gs;
+    const regex = /data-musmeta='(.*?)'/g;
     const items = [];
     let match;
     while ((match = regex.exec(html)) !== null) {
-        items.push({
-            id: 'net_' + Math.random().toString(36).substr(2, 9),
-            title: match[1].trim(),
-            artist: match[2].trim(),
-            filePath: match[3],
-            genre: 'Online',
-            isOnline: true
-        });
+        try {
+            const data = JSON.parse(match[1]);
+            if (data && data.url) {
+                items.push({
+                    id: 'net_' + Math.random().toString(36).substr(2, 9),
+                    title: data.title || 'Unknown Title',
+                    artist: data.artist || 'Unknown Artist',
+                    filePath: data.url,
+                    genre: 'Online',
+                    isOnline: true
+                });
+            }
+        } catch (e) { }
     }
     return items;
 }
