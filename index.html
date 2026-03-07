@@ -1233,34 +1233,39 @@
             } catch (e) { cont.innerHTML = '<div class="empty">Network error</div>'; }
         }
 
-        // ── HITMOTOP ─────────────────────────────────────
+        // ── MUZOFOND (replacing Hitmotop) ──────────────────
         async function hitmotop(q) {
             const target = q
-                ? `https://rus.hitmotop.com/search?q=${encodeURIComponent(q)}`
-                : `https://rus.hitmotop.com/`;
+                ? `https://muzofond.fm/search/${encodeURIComponent(q)}`
+                : `https://muzofond.fm/`;
             const res = await fetch(PROXY + encodeURIComponent(target), { signal: AbortSignal.timeout(10000) });
             if (!res.ok) throw new Error('Proxy error ' + res.status);
             const html = await res.text();
-            // Hitmotop stores track JSON in data-musmeta attribute:
-            // data-musmeta='{"artist":"...","title":"...","url":"...mp3","img":"..."}'
-            const re = /data-musmeta='(.*?)'/g;
+
             const out = [];
-            let m;
-            while ((m = re.exec(html))) {
-                try {
-                    const d = JSON.parse(m[1]);
-                    if (d.url && d.title && d.artist) {
+            try {
+                // Muzofond structure: <li class="item"> blocks containing artist, track, and data-url
+                const blocks = html.split('<li class="item"');
+                for (let i = 1; i < blocks.length; i++) {
+                    const block = blocks[i];
+                    const urlMatch = /data-url="([^"]+)"/.exec(block);
+                    const artistMatch = /<span class="artist">([^<]+)<\/span>/.exec(block);
+                    const trackMatch = /<span class="track">([^<]+)<\/span>/.exec(block);
+
+                    if (urlMatch && artistMatch && trackMatch) {
                         out.push({
                             id: 'net_' + Math.random().toString(36).slice(2),
-                            title: d.title,
-                            artist: d.artist,
-                            filePath: d.url,
-                            cover: d.img || null,
+                            title: trackMatch[1].trim(),
+                            artist: artistMatch[1].trim(),
+                            filePath: urlMatch[1],
+                            cover: null, // Muzofond doesn't have covers in simple search
                             genre: 'Online',
                             isOnline: true
                         });
                     }
-                } catch (e) { /* skip malformed */ }
+                }
+            } catch (e) {
+                console.error("Muzofond parse error:", e);
             }
             return out;
         }

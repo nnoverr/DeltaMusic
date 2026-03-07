@@ -492,30 +492,36 @@ function createTrackRow(track, isOnline, onClick, onAction) {
 // Downloader Helpers
 // ==========================================
 async function fetchHitmotopDirect(query) {
-    let target = `https://rus.hitmotop.com/search?q=${encodeURIComponent(query)}`;
-    if (!query) target = `https://rus.hitmos.fm/collection/7270195`; // Default
+    let target = `https://muzofond.fm/search/${encodeURIComponent(query)}`;
+    if (!query) target = `https://muzofond.fm/`; // Default to top charts
 
     const url = CONFIG.PROXY + encodeURIComponent(target);
     const res = await fetch(url);
     const html = await res.text();
 
-    const regex = /data-musmeta='(.*?)'/g;
     const items = [];
-    let match;
-    while ((match = regex.exec(html)) !== null) {
-        try {
-            const data = JSON.parse(match[1]);
-            if (data && data.url) {
+    try {
+        // Muzofond structure: <li class="item"> blocks containing artist, track, and data-url
+        const blocks = html.split('<li class="item"');
+        for (let i = 1; i < blocks.length; i++) {
+            const block = blocks[i];
+            const urlMatch = /data-url="([^"]+)"/.exec(block);
+            const artistMatch = /<span class="artist">([^<]+)<\/span>/.exec(block);
+            const trackMatch = /<span class="track">([^<]+)<\/span>/.exec(block);
+
+            if (urlMatch && artistMatch && trackMatch) {
                 items.push({
                     id: 'net_' + Math.random().toString(36).substr(2, 9),
-                    title: data.title || 'Unknown Title',
-                    artist: data.artist || 'Unknown Artist',
-                    filePath: data.url,
+                    title: trackMatch[1].trim(),
+                    artist: artistMatch[1].trim(),
+                    filePath: urlMatch[1],
                     genre: 'Online',
                     isOnline: true
                 });
             }
-        } catch (e) { }
+        }
+    } catch (e) {
+        console.error("Muzofond parse error:", e);
     }
     return items;
 }
