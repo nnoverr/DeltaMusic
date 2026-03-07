@@ -59,7 +59,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
                     ),
                     'Accept': 'text/html,application/xhtml+xml,*/*;q=0.9',
                     'Accept-Language': 'ru-RU,ru;q=0.9,en;q=0.8',
-                    'Referer': 'https://rus.hitmotop.com/',
+                    'Referer': 'https://box.hitplayer.ru/',
                     'Connection': 'keep-alive',
                 })
                 with urllib.request.urlopen(req, timeout=10) as resp:
