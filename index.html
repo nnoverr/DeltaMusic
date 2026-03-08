@@ -9,22 +9,25 @@
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#050505">
     <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="icon-192.png">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0"
         rel="stylesheet">
     <style>
         :root {
-            --bg1: #050505;
-            --bg2: #1A0B2E;
-            --pink: #E94057;
-            --purple: #8A2387;
-            --orange: #F27121;
-            --surface: rgba(255, 255, 255, 0.08);
-            --border: rgba(255, 255, 255, 0.15);
-            --text: #FFFFFF;
-            --muted: #999;
-            --nav-h: 68px;
+            --bg-gradient-top: #050505;
+            --bg-gradient-bottom: #1A0B2E;
+            --accent-pink: #E94057;
+            --accent-purple: #8A2387;
+            --accent-orange: #F27121;
+            --surface-color: rgba(255, 255, 255, 0.05);
+            --surface-border: rgba(255, 255, 255, 0.1);
+            --text-primary: #FFFFFF;
+            --text-secondary: #B3B3B3;
+            --nav-height: 70px;
+            --border-radius: 24px;
+            --transition-speed: 0.3s;
         }
 
         * {
@@ -36,455 +39,535 @@
 
         body {
             font-family: 'Inter', sans-serif;
-            background: linear-gradient(180deg, var(--bg1) 0%, var(--bg2) 100%) fixed;
-            color: var(--text);
+            color: var(--text-primary);
+            background: linear-gradient(180deg, var(--bg-gradient-top) 0%, var(--bg-gradient-bottom) 100%);
+            background-attachment: fixed;
             min-height: 100vh;
             overflow-x: hidden;
             user-select: none;
+            -webkit-user-select: none;
         }
 
-        /* ---- SCREENS ---- */
-        .content {
-            padding-bottom: calc(var(--nav-h) + 100px);
+        .hidden {
+            display: none !important;
+        }
+
+        .content-container {
+            padding-bottom: calc(var(--nav-height) + 120px);
+            width: 100%;
         }
 
         .screen {
             display: none;
             padding: 0 16px;
-            animation: fadeIn .25s;
+            animation: fadeIn 0.3s ease;
         }
 
         .screen.active {
             display: block;
         }
 
-        .sub {
+        .sub-screen {
             display: none;
-            animation: fadeIn .2s;
+            animation: fadeIn 0.2s ease;
         }
 
-        .sub.active {
+        .sub-screen.active {
             display: block;
+        }
+
+        .screen-padding-top {
+            padding-top: 48px;
         }
 
         @keyframes fadeIn {
             from {
                 opacity: 0;
-                transform: translateY(6px);
+                transform: translateY(10px);
             }
 
             to {
                 opacity: 1;
-                transform: none;
+                transform: translateY(0);
             }
         }
 
-        /* ---- HEADER ---- */
-        .lib-header {
+        .library-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 48px 8px 16px;
+            padding: 48px 8px 16px 8px;
         }
 
         .screen-title {
-            font-size: 32px;
+            font-size: 36px;
             font-weight: 700;
         }
 
-        .screen-title.padded {
-            padding-top: 48px;
+        .delta-logo {
+            font-size: 36px;
+            font-weight: bold;
+            color: var(--accent-pink);
+            transform: rotate(33deg);
+            animation: logoPulse 4s infinite alternate linear;
         }
 
-        .delta {
-            font-size: 34px;
-            font-weight: 900;
-            color: var(--pink);
-            display: inline-block;
-            rotate: 33deg;
+        @keyframes logoPulse {
+            0% {
+                color: var(--accent-pink);
+            }
+
+            100% {
+                color: #9C27B0;
+            }
         }
 
-        /* ---- LIBRARY SUB TABS ---- */
-        .subtab-bar {
+        .library-tabs-scroll {
+            overflow-x: auto;
+            padding-bottom: 8px;
+            margin-bottom: 16px;
+            scrollbar-width: none;
+        }
+
+        .library-tabs-scroll::-webkit-scrollbar {
+            display: none;
+        }
+
+        .library-sub-tabs {
             display: flex;
             gap: 8px;
-            overflow-x: auto;
-            padding-bottom: 10px;
-            margin-bottom: 14px;
-            scrollbar-width: none;
             align-items: center;
+            white-space: nowrap;
         }
 
-        .subtab-bar::-webkit-scrollbar {
-            display: none;
-        }
-
-        .stab {
+        .sub-tab-btn {
             background: transparent;
             border: 1px solid transparent;
-            color: var(--muted);
+            color: var(--text-secondary);
             padding: 8px 16px;
-            border-radius: 50px;
+            border-radius: var(--border-radius);
             font-size: 14px;
             font-weight: 500;
+            transition: var(--transition-speed);
             cursor: pointer;
-            white-space: nowrap;
-            transition: .2s;
         }
 
-        .stab.active {
-            background: var(--border);
-            border-color: rgba(255, 255, 255, .3);
-            color: var(--text);
+        .sub-tab-btn.active {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: var(--text-primary);
         }
 
-        .stab-spacer {
-            flex: 1;
-        }
-
-        .shuffle-btn {
+        .icon-button {
             background: none;
             border: none;
-            color: var(--muted);
+            color: var(--text-secondary);
             cursor: pointer;
-            padding: 8px;
             display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px;
         }
 
-        .shuffle-btn.on {
-            color: var(--pink);
+        .icon-button.active {
+            color: var(--accent-pink);
         }
 
-        /* ---- SEARCH ---- */
-        .search-wrap {
+        .search-input-wrapper {
             position: relative;
-            margin-bottom: 14px;
-            display: none;
+            margin-bottom: 16px;
         }
 
-        .search-wrap.visible {
-            display: block;
-        }
-
-        .search-wrap input {
+        .search-input-wrapper input {
             width: 100%;
-            background: var(--surface);
-            border: 1px solid var(--border);
-            color: var(--text);
-            padding: 13px 16px 13px 46px;
-            border-radius: 50px;
-            font-size: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: var(--text-primary);
+            padding: 14px 16px 14px 48px;
+            border-radius: 24px;
+            font-size: 16px;
             outline: none;
         }
 
-        .search-wrap input:focus {
-            border-color: var(--pink);
-        }
-
-        .search-ic {
+        .search-icon {
             position: absolute;
-            left: 14px;
+            left: 16px;
             top: 50%;
             transform: translateY(-50%);
-            color: var(--muted);
+            color: var(--text-secondary);
         }
 
-        /* ---- TRACK ROW ---- */
-        .tlist {
+        .track-list {
             display: flex;
             flex-direction: column;
             gap: 8px;
         }
 
-        .trow {
+        .track-row {
             display: flex;
             align-items: center;
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: var(--border-radius);
             padding: 12px;
             cursor: pointer;
-            transition: background .2s;
         }
 
-        .trow:active {
-            background: rgba(255, 255, 255, .15);
-        }
-
-        .tcover {
-            width: 48px;
-            height: 48px;
-            border-radius: 10px;
-            flex-shrink: 0;
+        .track-cover {
+            width: 50px;
+            height: 50px;
+            border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
-            background: linear-gradient(135deg, var(--purple), var(--pink));
+            flex-shrink: 0;
         }
 
-        .tcover.online {
+        .gradient-cover {
+            background: linear-gradient(135deg, var(--accent-purple), var(--accent-pink));
+        }
+
+        .gradient-cover.online {
             background: linear-gradient(135deg, #1A2980, #26D0CE);
         }
 
-        .tinfo {
+        .track-info {
             flex: 1;
-            margin-left: 12px;
+            margin-left: 14px;
             overflow: hidden;
         }
 
-        .ttitle {
-            font-size: 15px;
+        .track-title {
+            font-size: 16px;
             font-weight: 500;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
 
-        .tartist {
-            font-size: 12px;
-            color: var(--muted);
-            margin-top: 3px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+        .track-artist {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-top: 4px;
         }
 
-        .taction {
+        .track-action {
+            padding: 8px;
             background: none;
             border: none;
             cursor: pointer;
-            padding: 8px;
-            flex-shrink: 0;
+            color: var(--text-secondary);
         }
 
-        .taction .material-symbols-outlined {
-            font-size: 22px;
-            color: var(--pink);
+        .color-pink {
+            color: var(--accent-pink);
         }
 
-        .taction.del .material-symbols-outlined {
-            color: rgba(244, 67, 54, .7);
+        .color-red {
+            color: #E57373;
         }
 
-        /* ---- ARTIST GROUP ---- */
-        .ag {
+        .artist-group {
             margin-bottom: 24px;
         }
 
-        .ag-head {
+        .artist-group-header {
             display: flex;
             align-items: center;
-            margin-bottom: 10px;
-            gap: 14px;
+            margin-bottom: 12px;
         }
 
-        .ag-avatar {
-            width: 50px;
-            height: 50px;
+        .artist-group-avatar {
+            width: 54px;
+            height: 54px;
             border-radius: 50%;
-            background: var(--surface);
+            background: var(--surface-color);
             display: flex;
             align-items: center;
             justify-content: center;
-            flex-shrink: 0;
         }
 
-        .ag-name {
-            font-size: 17px;
+        .artist-group-name {
+            margin-left: 16px;
+            font-size: 18px;
             font-weight: 600;
         }
 
-        /* ---- FOR YOU CARD ---- */
-        .ay-card {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 20px;
+        .artist-media-card {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: var(--border-radius);
             overflow: hidden;
             margin-bottom: 16px;
         }
 
-        .ay-photo {
+        .artist-media-photo {
             width: 100%;
-            height: 180px;
+            height: 200px;
             object-fit: cover;
-            display: block;
+            background: var(--surface-color);
         }
 
-        .ay-photo-placeholder {
-            width: 100%;
-            height: 180px;
-            background: linear-gradient(135deg, var(--purple), var(--pink));
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        .artist-media-content {
+            padding: 16px;
         }
 
-        .ay-body {
-            padding: 14px;
-        }
-
-        .ay-title {
-            font-size: 18px;
-            font-weight: 700;
+        .artist-media-title {
+            font-size: 20px;
+            font-weight: bold;
             margin-bottom: 12px;
         }
 
-        /* ---- CHART ---- */
-        .chart-area {
+        .chart-container {
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
             height: 50vh;
+            gap: 20px;
         }
 
-        .chart-circle {
-            width: 190px;
-            height: 190px;
+        .chart-play-button {
+            width: 200px;
+            height: 200px;
             border-radius: 50%;
-            border: 4px solid rgba(233, 64, 87, .5);
-            background: var(--surface);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            gap: 8px;
-            animation: glow 2s infinite alternate;
-        }
-
-        @keyframes glow {
-            from {
-                box-shadow: 0 0 20px rgba(233, 64, 87, .2);
-            }
-
-            to {
-                box-shadow: 0 0 40px rgba(156, 39, 176, .3);
-                border-color: rgba(156, 39, 176, .5);
-            }
-        }
-
-        .chart-label {
-            font-size: 16px;
-            font-weight: 600;
-            text-align: center;
-            padding: 0 16px;
-        }
-
-        /* ---- FORMS ---- */
-        .form-body {
-            display: flex;
-            flex-direction: column;
-            gap: 14px;
-            margin-bottom: 20px;
-        }
-
-        .fgroup label {
-            display: block;
-            font-size: 13px;
-            color: var(--muted);
-            margin-bottom: 6px;
-            margin-left: 4px;
-        }
-
-        .finput {
-            width: 100%;
-            background: var(--surface);
-            border: 1px solid var(--border);
-            color: var(--text);
-            padding: 14px 16px;
-            border-radius: 16px;
-            font-size: 15px;
-            outline: none;
-            font-family: inherit;
-        }
-
-        .finput:focus {
-            border-color: var(--purple);
-        }
-
-        textarea.finput {
-            height: 110px;
-            resize: none;
-        }
-
-        /* ---- BUTTONS ---- */
-        .btn-main {
-            width: 100%;
-            padding: 15px;
-            border: none;
-            border-radius: 50px;
-            background: linear-gradient(90deg, var(--purple), var(--pink));
-            color: #fff;
-            font-size: 16px;
-            font-weight: 600;
+            background: rgba(255, 255, 255, 0.1);
+            border: 4px solid rgba(233, 64, 87, 0.5);
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
             cursor: pointer;
-            transition: transform .1s, opacity .2s;
-            font-family: inherit;
+            animation: chartGlow 2s infinite alternate ease-in-out;
         }
 
-        .btn-main:active {
-            transform: scale(.98);
+        @keyframes chartGlow {
+            0% {
+                border-color: rgba(233, 64, 87, 0.5);
+                box-shadow: 0 0 30px rgba(233, 64, 87, 0.2);
+            }
+
+            100% {
+                border-color: rgba(156, 39, 176, 0.5);
+                box-shadow: 0 0 30px rgba(156, 39, 176, 0.2);
+            }
         }
 
-        .btn-main:disabled {
-            opacity: .5;
-            cursor: not-allowed;
+        .player-widget {
+            position: fixed;
+            bottom: calc(var(--nav-height) + 16px);
+            left: 16px;
+            right: 16px;
+            z-index: 100;
         }
 
-        /* ---- STATUS / PROGRESS ---- */
-        .status-box {
+        .player-mini {
+            background: rgba(20, 8, 40, 0.85);
+            backdrop-filter: blur(15px);
+            border: 1px solid var(--surface-border);
+            border-radius: var(--border-radius);
+            padding: 12px 16px;
             display: flex;
             align-items: center;
-            gap: 10px;
-            margin-top: 14px;
-            font-size: 13px;
-            color: var(--muted);
+            justify-content: space-between;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
         }
 
-        .prog-wrap {
-            width: 100%;
-            height: 4px;
-            background: var(--border);
-            border-radius: 2px;
-            margin-top: 12px;
+        .player-mini-info {
+            flex: 1;
             overflow: hidden;
         }
 
-        .prog-bar {
+        .player-title {
+            font-size: 16px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .player-artist {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        .player-full {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.95);
+            backdrop-filter: blur(25px);
+            z-index: 1000;
+            padding: 40px 24px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .player-full-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .player-full-cover {
+            width: 280px;
+            height: 280px;
+            border-radius: 32px;
+            background: linear-gradient(135deg, var(--accent-purple), var(--accent-pink));
+            margin: 40px auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 20px 40px rgba(233, 64, 87, 0.3);
+            overflow: hidden;
+        }
+
+        .player-full-cover img {
+            width: 100%;
             height: 100%;
-            background: var(--pink);
-            width: 0%;
-            transition: width .3s;
+            object-fit: cover;
         }
 
-        .status-success {
-            background: rgba(76, 175, 80, .2);
-            color: #81C784;
-            padding: 8px 14px;
-            border-radius: 10px;
-            margin-top: 8px;
-            font-size: 13px;
+        .player-full-info {
+            text-align: center;
+            margin-bottom: 40px;
         }
 
-        .status-error {
-            background: rgba(244, 67, 54, .2);
-            color: #E57373;
-            padding: 8px 14px;
-            border-radius: 10px;
-            margin-top: 8px;
-            font-size: 13px;
+        .player-title-large {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
         }
 
-        /* ---- SPINNER ---- */
-        .spin {
-            width: 28px;
-            height: 28px;
-            border: 3px solid rgba(255, 255, 255, .1);
-            border-top-color: var(--pink);
+        .player-artist-large {
+            font-size: 18px;
+            color: var(--text-secondary);
+        }
+
+        .seekbar {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            -webkit-appearance: none;
+            background: rgba(255, 255, 255, 0.2);
+            outline: none;
+        }
+
+        .seekbar::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--accent-pink);
+        }
+
+        .time-displays {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 10px;
+        }
+
+        .player-full-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 40px;
+            margin-top: auto;
+        }
+
+        .play-btn {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: var(--accent-pink);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 20px rgba(233, 64, 87, 0.4);
+        }
+
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: var(--nav-height);
+            background: rgba(5, 5, 5, 0.95);
+            backdrop-filter: blur(10px);
+            display: flex;
+            border-top: 1px solid var(--surface-border);
+            z-index: 500;
+        }
+
+        .nav-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            background: none;
+            border: none;
+            cursor: pointer;
+        }
+
+        .nav-item.active {
+            color: var(--accent-pink);
+        }
+
+        .nav-label {
+            font-size: 11px;
+            margin-top: 4px;
+            font-weight: 500;
+        }
+
+        #import-input {
+            width: 100%;
+            height: 150px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--surface-border);
+            border-radius: 16px;
+            color: #fff;
+            padding: 16px;
+            font-family: inherit;
+            resize: none;
+            outline: none;
+        }
+
+        .executor-form {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .exec-input {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--surface-border);
+            border-radius: 12px;
+            color: #fff;
+            padding: 14px;
+            outline: none;
+        }
+
+        #global-toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            padding: 12px 24px;
+            border-radius: 50px;
+            z-index: 2000;
+            backdrop-filter: blur(10px);
+            font-size: 14px;
+        }
+
+        .loading-spinner {
+            width: 30px;
+            height: 30px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top-color: var(--accent-pink);
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
@@ -494,968 +577,511 @@
                 transform: rotate(360deg);
             }
         }
-
-        .spinner-center {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 100px;
-        }
-
-        .empty {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 180px;
-            color: var(--muted);
-            font-size: 17px;
-        }
-
-        /* ---- PLAYER ---- */
-        .player {
-            position: fixed;
-            bottom: calc(var(--nav-h) + 12px);
-            left: 12px;
-            right: 12px;
-            z-index: 200;
-        }
-
-        .player-mini {
-            background: rgba(20, 8, 40, .85);
-            backdrop-filter: blur(16px);
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            padding: 12px 16px;
-            display: none;
-            align-items: center;
-            gap: 12px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, .4);
-            cursor: pointer;
-        }
-
-        .player-mini.visible {
-            display: flex;
-        }
-
-        .player-mini-info {
-            flex: 1;
-            overflow: hidden;
-        }
-
-        .p-title {
-            font-size: 15px;
-            font-weight: 600;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .p-artist {
-            font-size: 12px;
-            color: var(--muted);
-        }
-
-        .p-play-btn {
-            background: none;
-            border: none;
-            color: var(--text);
-            cursor: pointer;
-            display: flex;
-            padding: 4px;
-        }
-
-        .player-full {
-            position: fixed;
-            inset: 0;
-            background: rgba(5, 2, 14, .95);
-            backdrop-filter: blur(24px);
-            z-index: 300;
-            display: none;
-            flex-direction: column;
-            padding: 20px 20px calc(var(--nav-h) + 20px);
-            overflow-y: auto;
-        }
-
-        .player-full.visible {
-            display: flex;
-        }
-
-        .pf-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 24px;
-        }
-
-        .pf-btn {
-            background: none;
-            border: none;
-            cursor: pointer;
-            padding: 8px;
-            display: flex;
-        }
-
-        .pf-btn.pink {
-            color: var(--pink);
-        }
-
-        .pf-cover {
-            width: 260px;
-            height: 260px;
-            border-radius: 24px;
-            margin: 0 auto 28px;
-            background: linear-gradient(135deg, var(--purple), var(--pink));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 20px 40px rgba(233, 64, 87, .3);
-            overflow: hidden;
-        }
-
-        .pf-cover img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .pf-title {
-            font-size: 24px;
-            font-weight: 700;
-            text-align: center;
-            margin-bottom: 6px;
-        }
-
-        .pf-artist {
-            font-size: 15px;
-            color: var(--muted);
-            text-align: center;
-            margin-bottom: 28px;
-        }
-
-        .seekbar {
-            width: 100%;
-            -webkit-appearance: none;
-            height: 4px;
-            background: rgba(255, 255, 255, .25);
-            border-radius: 2px;
-            outline: none;
-            margin-bottom: 8px;
-        }
-
-        .seekbar::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 14px;
-            height: 14px;
-            border-radius: 50%;
-            background: var(--pink);
-            cursor: pointer;
-        }
-
-        .times {
-            display: flex;
-            justify-content: space-between;
-            font-size: 12px;
-            color: var(--muted);
-            margin-bottom: 32px;
-        }
-
-        .pf-controls {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 28px;
-            margin-top: auto;
-        }
-
-        .ctrl {
-            background: none;
-            border: none;
-            cursor: pointer;
-            color: var(--text);
-            display: flex;
-            padding: 8px;
-        }
-
-        .ctrl .material-symbols-outlined {
-            font-size: 36px;
-        }
-
-        .ctrl.big {
-            background: var(--pink);
-            border-radius: 50%;
-            width: 68px;
-            height: 68px;
-            justify-content: center;
-            align-items: center;
-            box-shadow: 0 8px 24px rgba(233, 64, 87, .4);
-        }
-
-        .ctrl.big .material-symbols-outlined {
-            font-size: 40px;
-        }
-
-        /* ---- BOTTOM NAV ---- */
-        .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: var(--nav-h);
-            background: rgba(5, 2, 14, .95);
-            backdrop-filter: blur(12px);
-            border-top: 1px solid var(--border);
-            display: flex;
-            z-index: 100;
-        }
-
-        .nav-btn {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            background: none;
-            border: none;
-            color: var(--muted);
-            cursor: pointer;
-            gap: 4px;
-            transition: color .2s;
-            padding-bottom: env(safe-area-inset-bottom);
-        }
-
-        .nav-btn.active {
-            color: var(--pink);
-        }
-
-        .nav-btn .material-symbols-outlined {
-            font-size: 24px;
-        }
-
-        .nav-btn span:last-child {
-            font-size: 11px;
-            font-weight: 500;
-        }
-
-        /* ---- TOAST ---- */
-        .toast {
-            position: fixed;
-            top: 16px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0, 0, 0, .85);
-            color: #fff;
-            padding: 10px 22px;
-            border-radius: 50px;
-            font-size: 14px;
-            z-index: 9999;
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity .3s;
-            backdrop-filter: blur(10px);
-            white-space: nowrap;
-        }
-
-        .toast.show {
-            opacity: 1;
-        }
-
-        /* ---- MISC ---- */
-        .section-sub {
-            font-size: 13px;
-            color: var(--muted);
-            margin-bottom: 20px;
-        }
-
-        .log-entry {
-            padding: 6px 10px;
-            font-size: 12px;
-            border-radius: 8px;
-            background: var(--surface);
-        }
-
-        .badge-ios {
-            background: #007AFF;
-            color: white;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 10px;
-            font-weight: bold;
-            text-transform: uppercase;
-            margin-left: 6px;
-        }
-
-        .install-card {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 16px;
-            margin-bottom: 16px;
-        }
-
-        .cmd-box {
-            background: #000;
-            padding: 12px;
-            border-radius: 8px;
-            font-family: monospace;
-            font-size: 12px;
-            color: #0F0;
-            margin: 10px 0;
-            word-break: break-all;
-            position: relative;
-        }
-
-        .copy-btn {
-            position: absolute;
-            top: 5px;
-            right: 5px;
-            background: rgba(255, 255, 255, 0.1);
-            border: none;
-            color: #fff;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 10px;
-            cursor: pointer;
-        }
     </style>
 </head>
 
 <body>
 
-    <div class="content">
-
-        <!-- SCREEN: LIBRARY -->
-        <div id="scr-library" class="screen active">
-            <div class="lib-header">
+    <div class="content-container">
+        <!-- LIBRARY SCREEN -->
+        <div id="screen-library" class="screen active">
+            <div class="library-header">
                 <h1 class="screen-title">Library</h1>
-                <span class="delta">Δ</span>
+                <div class="delta-logo">Δ</div>
             </div>
 
-            <!-- Sub-tab bar -->
-            <div class="subtab-bar" id="subtab-bar">
-                <button class="stab active" data-sub="tracks">Tracks</button>
-                <button class="stab" data-sub="artists">Artists</button>
-                <button class="stab" data-sub="foryou">For You</button>
-                <button class="stab" data-sub="chart">Your Chart</button>
-                <button class="stab" data-sub="online">Online</button>
-                <div class="stab-spacer"></div>
-                <button class="shuffle-btn" id="shuffle-btn"><span
-                        class="material-symbols-outlined">shuffle</span></button>
-            </div>
-
-            <!-- Search (visible only on Online) -->
-            <div class="search-wrap" id="search-wrap">
-                <span class="material-symbols-outlined search-ic">search</span>
-                <input type="text" id="search-input" placeholder="Search songs or artists…">
-            </div>
-
-            <!-- Sub screens -->
-            <div id="sub-tracks" class="sub active">
-                <div class="tlist" id="list-tracks"></div>
-            </div>
-            <div id="sub-artists" class="sub">
-                <div id="list-artists"></div>
-            </div>
-            <div id="sub-foryou" class="sub">
-                <div class="tlist" id="list-foryou"></div>
-            </div>
-            <div id="sub-chart" class="sub">
-                <div class="chart-area">
-                    <div class="chart-circle" id="chart-btn">
-                        <span class="material-symbols-outlined" style="font-size:40px;color:var(--pink)">shuffle</span>
-                        <span class="chart-label">Play Your Chart</span>
-                    </div>
+            <div class="library-tabs-scroll">
+                <div class="library-sub-tabs">
+                    <button class="sub-tab-btn active" data-subtab="tracks">Tracks</button>
+                    <button class="sub-tab-btn" data-subtab="artists">Artists</button>
+                    <button class="sub-tab-btn" data-subtab="foryou">For You</button>
+                    <button class="sub-tab-btn" data-subtab="yourchart">Your Chart</button>
+                    <button class="sub-tab-btn" data-subtab="online">Online</button>
+                    <div style="flex:1"></div>
+                    <button class="icon-button" id="btn-toggle-shuffle">
+                        <span class="material-symbols-outlined">shuffle</span>
+                    </button>
                 </div>
             </div>
-            <div id="sub-online" class="sub">
-                <div class="tlist" id="list-online"></div>
+
+            <div id="library-search-container" class="search-input-wrapper hidden">
+                <span class="material-symbols-outlined search-icon">search</span>
+                <input type="text" id="library-search-input" placeholder="Search DeltaMusic Online...">
+            </div>
+
+            <div id="subtab-tracks" class="sub-screen active">
+                <div id="local-tracks-list" class="track-list"></div>
+            </div>
+            <div id="subtab-artists" class="sub-screen">
+                <div id="artists-list"></div>
+            </div>
+            <div id="subtab-foryou" class="sub-screen">
+                <div id="foryou-list" class="track-list"></div>
+            </div>
+            <div id="subtab-yourchart" class="sub-screen">
+                <div class="chart-container">
+                    <div class="chart-play-button" id="btn-play-chart">
+                        <span class="material-symbols-outlined"
+                            style="font-size: 48px; color: var(--accent-pink);">shuffle</span>
+                    </div>
+                    <p style="font-weight: bold; font-size: 18px;">Play Your Chart</p>
+                    <div class="chart-spinner loading-spinner hidden"></div>
+                </div>
+            </div>
+            <div id="subtab-online" class="sub-screen">
+                <div id="online-results-list" class="track-list"></div>
             </div>
         </div>
 
-        <!-- SCREEN: DOWNLOAD -->
-        <div id="scr-download" class="screen">
-            <h1 class="screen-title padded">Download</h1>
-            <p class="section-sub">Paste Yandex HTML or track list (Artist - Title)</p>
-            <div class="form-body">
-                <textarea class="finput" id="import-text" placeholder="Paste here…"></textarea>
-                <button class="btn-main" id="import-btn">
-                    <span class="material-symbols-outlined">cloud_download</span> Start Import
+        <!-- DOWNLOAD SCREEN -->
+        <div id="screen-download" class="screen">
+            <h1 class="screen-title screen-padding-top">Import</h1>
+            <p style="color:var(--text-secondary); margin-bottom: 20px;">Paste Yandex Music HTML or track list (Artist -
+                Title)</p>
+            <textarea id="import-input" placeholder="Paste data here..."></textarea>
+            <button id="btn-run-import" class="accent-btn" style="margin-top: 16px;">
+                <span class="material-symbols-outlined">cloud_download</span>
+                Start Import
+            </button>
+
+            <div id="import-status" class="hidden"
+                style="margin-top: 20px; display: flex; align-items: center; gap:12px;">
+                <div class="loading-spinner"></div>
+                <span id="import-status-text">Processing...</span>
+            </div>
+            <div id="import-progress-container" class="hidden"
+                style="width:100%; height:4px; background:rgba(255,255,255,0.1); margin-top:10px; border-radius:2px; overflow:hidden;">
+                <div id="import-progress-fill"
+                    style="width:0%; height:100%; background:var(--accent-pink); transition: width 0.3s;"></div>
+            </div>
+            <div id="import-results" style="margin-top: 20px;" class="track-list"></div>
+        </div>
+
+        <!-- EXECUTOR SCREEN -->
+        <div id="screen-executor" class="screen">
+            <h1 class="screen-title screen-padding-top">Admin</h1>
+            <p style="color:var(--text-secondary); margin-bottom: 24px;">Upload track to Google Sheets database.</p>
+
+            <div class="executor-form">
+                <input type="text" id="exec-artist" class="exec-input" placeholder="Artist Name">
+                <input type="password" id="exec-password" class="exec-input" placeholder="Secret Key">
+                <input type="text" id="exec-photo" class="exec-input" placeholder="Photo URL (Optional)">
+                <input type="text" id="exec-title" class="exec-input" placeholder="Track Title">
+                <input type="text" id="exec-url" class="exec-input" placeholder="MP3 Link">
+                <button id="btn-run-executor" class="accent-btn" style="margin-top:10px">
+                    <span class="material-symbols-outlined">upload_file</span>
+                    Upload Track
                 </button>
             </div>
-            <div class="status-box" id="import-status" style="display:none">
-                <div class="spin"></div>
-                <span id="import-status-text">Loading…</span>
-            </div>
-            <div class="prog-wrap" id="prog-wrap" style="display:none">
-                <div class="prog-bar" id="prog-bar"></div>
-            </div>
-            <div class="tlist" id="import-log" style="gap:6px;margin-top:12px"></div>
+            <div id="exec-status"
+                style="margin-top:12px; font-size:14px; text-align:center; padding:10px; border-radius:8px;"
+                class="hidden"></div>
+            <div id="executor-results" style="margin-top:20px; opacity:0.7"></div>
         </div>
-
-        <!-- SCREEN: INSTALLER -->
-        <div id="scr-install" class="screen">
-            <h1 class="screen-title padded">Installer <span class="badge-ios">iOS / Win</span></h1>
-            <p class="section-sub">Setup DeltaMusic as a native app on your device.</p>
-
-            <div class="install-card">
-                <h3>📱 iOS (Shortcuts + a-Shell)</h3>
-                <p style="font-size:13px;margin:8px 0;opacity:0.8">1. Paste into <b>a-Shell</b> (One-time setup):</p>
-                <div class="cmd-box">
-                    <span id="ios-cmd">curl -L
-                        https://raw.githubusercontent.com/nnoverr/DeltaMusic/main/pwa/setup_ios.sh > setup.sh; sh
-                        setup.sh</span>
-                    <button class="copy-btn" onclick="copyIosCmd()">Copy</button>
-                </div>
-                <p style="font-size:13px;margin:8px 0;opacity:0.8">2. Create <b>Apple Shortcut</b> (One-click launch):
-                </p>
-                <ul style="font-size:12px;opacity:0.8;padding-left:20px;margin-top:5px">
-                    <li>Add <b>"Execute Command"</b> (a-Shell) with: <code>python3 DeltaMusic/pwa/server.py</code></li>
-                    <li>Add <b>"Open URL"</b> with: <code>http://localhost:8080</code></li>
-                    <li>Add to <b>Home Screen</b>.</li>
-                </ul>
-            </div>
-
-            <div class="install-card">
-                <h3>💻 Windows (.exe)</h3>
-                <p style="font-size:13px;margin:8px 0;opacity:0.8">Download the standalone installer to get a desktop
-                    shortcut and auto-start.</p>
-                <a href="https://github.com/nnoverr/DeltaMusic/raw/main/pwa/DeltaInstaller.exe" class="btn-main"
-                    style="text-decoration:none;display:inline-flex">
-                    <span class="material-symbols-outlined">download</span> Download Installer (.exe)
-                </a>
-            </div>
-        </div>
-        <div id="scr-executor" class="screen">
-            <h1 class="screen-title padded">Executor</h1>
-            <p class="section-sub">Upload track to Google Sheets database.</p>
-            <div class="form-body">
-                <div class="fgroup"><label>Artist (Executor)</label><input type="text" class="finput" id="ex-artist"
-                        placeholder="e.g. Scandroid"></div>
-                <div class="fgroup"><label>Password</label><input type="password" class="finput" id="ex-pass"
-                        placeholder="Secret key"></div>
-                <div class="fgroup"><label>Photo Card URL (optional)</label><input type="url" class="finput"
-                        id="ex-photo" placeholder="https://…"></div>
-                <div class="fgroup"><label>Track Title</label><input type="text" class="finput" id="ex-title"
-                        placeholder="e.g. Neo-Tokyo"></div>
-                <div class="fgroup"><label>Track Download URL</label><input type="url" class="finput" id="ex-url"
-                        placeholder="Direct MP3 link"></div>
-            </div>
-            <div id="ex-msg"></div>
-            <button class="btn-main" id="ex-btn" style="margin-top:14px">
-                <span class="material-symbols-outlined">upload_file</span> Upload Track
-            </button>
-            <div class="tlist" id="ex-log" style="gap:6px;margin-top:16px"></div>
-        </div>
-
     </div>
 
-    <!-- PLAYER -->
-    <div class="player">
-        <div class="player-mini" id="player-mini">
+    <!-- PLAYER UI -->
+    <div class="player-widget">
+        <div id="player-mini" class="player-mini hidden">
             <div class="player-mini-info">
-                <div class="p-title" id="mini-title">Not Playing</div>
-                <div class="p-artist" id="mini-artist">DeltaMusic</div>
+                <div id="mini-title" class="player-title">Not Playing</div>
+                <div id="mini-artist" class="player-artist">DeltaMusic</div>
             </div>
-            <button class="p-play-btn" id="mini-play-btn">
-                <span class="material-symbols-outlined" id="mini-play-ic">play_arrow</span>
-            </button>
+            <button id="btn-mini-play" class="icon-button"><span id="icon-mini-play"
+                    class="material-symbols-outlined">play_arrow</span></button>
         </div>
     </div>
 
-    <!-- FULL PLAYER -->
-    <div class="player-full" id="player-full">
-        <div class="pf-header">
-            <button class="pf-btn pink" id="pf-collapse"><span
+    <div id="player-full" class="player-full hidden">
+        <div class="player-full-header">
+            <button id="btn-full-collapse" class="icon-button color-pink"><span
                     class="material-symbols-outlined">keyboard_arrow_down</span></button>
-            <button class="pf-btn" id="pf-close"><span class="material-symbols-outlined">close</span></button>
+            <button id="btn-full-close" class="icon-button"><span
+                    class="material-symbols-outlined">close</span></button>
         </div>
-        <div class="pf-cover" id="pf-cover"><span class="material-symbols-outlined"
-                style="font-size:80px;color:rgba(255,255,255,.4)">music_note</span></div>
-        <div class="pf-title" id="pf-title">Not Playing</div>
-        <div class="pf-artist" id="pf-artist">DeltaMusic</div>
-        <input type="range" class="seekbar" id="seekbar" min="0" max="100" value="0">
-        <div class="times"><span id="t-cur">0:00</span><span id="t-dur">0:00</span></div>
-        <div class="pf-controls">
-            <button class="ctrl" id="pf-prev"><span class="material-symbols-outlined">skip_previous</span></button>
-            <button class="ctrl big" id="pf-play"><span class="material-symbols-outlined"
-                    id="pf-play-ic">play_arrow</span></button>
-            <button class="ctrl" id="pf-next"><span class="material-symbols-outlined">skip_next</span></button>
+        <div class="player-full-cover" id="full-cover-container">
+            <span class="material-symbols-outlined" style="font-size: 80px; opacity: 0.3;">music_note</span>
+        </div>
+        <div class="player-full-info">
+            <div id="full-title" class="player-title-large">Not Playing</div>
+            <div id="full-artist" class="player-artist-large">DeltaMusic</div>
+        </div>
+        <div class="player-seekbar-container">
+            <input type="range" id="player-seekbar" class="seekbar" value="0" min="0" max="100">
+            <div class="time-displays">
+                <span id="time-current">0:00</span>
+                <span id="time-duration">0:00</span>
+            </div>
+        </div>
+        <div class="player-full-controls">
+            <button id="btn-full-prev" class="icon-button"><span class="material-symbols-outlined"
+                    style="font-size: 40px;">skip_previous</span></button>
+            <button id="btn-full-play" class="play-btn"><span id="icon-full-play" class="material-symbols-outlined"
+                    style="font-size: 48px; color: #fff;">play_arrow</span></button>
+            <button id="btn-full-next" class="icon-button"><span class="material-symbols-outlined"
+                    style="font-size: 40px;">skip_next</span></button>
         </div>
     </div>
 
-    <!-- NAV -->
+    <!-- BOTTOM NAV -->
     <nav class="bottom-nav">
-        <button class="nav-btn active" data-screen="scr-library">
+        <button class="nav-item active" data-target="screen-library">
             <span class="material-symbols-outlined">library_music</span>
-            <span>Library</span>
+            <span class="nav-label">Library</span>
         </button>
-        <button class="nav-btn" data-screen="scr-download"><span
-                class="material-symbols-outlined">cloud_download</span><span>Import</span></button>
-        <button class="nav-btn" data-screen="scr-install"><span
-                class="material-symbols-outlined">install_desktop</span><span>Install</span></button>
-        <button class="nav-btn" data-screen="scr-executor"><span
-                class="material-symbols-outlined">clinical_notes</span><span>Admin</span></button>
+        <button class="nav-item" data-target="screen-download">
+            <span class="material-symbols-outlined">cloud_download</span>
+            <span class="nav-label">Import</span>
+        </button>
+        <button class="nav-item" data-target="screen-executor">
+            <span class="material-symbols-outlined">admin_panel_settings</span>
+            <span class="nav-label">Admin</span>
+        </button>
     </nav>
 
-    <!-- TOAST -->
-    <div class="toast" id="toast"></div>
-
-    <!-- AUDIO -->
-    <audio id="audio" preload="metadata"></audio>
+    <div id="global-toast" class="hidden"></div>
+    <audio id="audio-player" preload="metadata"></audio>
 
     <script>
-        // ── CONFIG ──────────────────────────────────────
-        // Universal proxy endpoint — works locally (server.mjs) and on Vercel
-        const PROXY = '/api/proxy?url=';
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw0d4RGncqnwKla0E7YK06xyAD2He5-w-08DZ1QvkbEofRnEg8pv73jLDtdJaXBbucrFA/exec';
-        const APP_VER = '2.1.2 Opt';
-        const DB_NAME = 'DeltaMusicDB', DB_VER = 3, STORE = 'tracks';
+        const CONFIG = {
+            PROXY: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+                ? "/api/proxy?url="
+                : "https://corsproxy.io/?",
+            SCRIPT_URL: "https://script.google.com/macros/s/AKfycbw0d4RGncqnwKla0E7YK06xyAD2He5-w-08DZ1QvkbEofRnEg8pv73jLDtdJaXBbucrFA/exec",
+            DB_NAME: "DeltaMusicDB",
+            DB_VERSION: 3,
+            STORE_NAME: "tracks"
+        };
 
-        // ── STATE ────────────────────────────────────────
-        let db = null;
-        let playlist = [], idx = 0, shuffle = false;
+        let db;
+        let playlist = [];
+        let curIdx = -1;
+        let isShuffle = false;
         let blobUrl = null;
 
-        // ── DB ───────────────────────────────────────────
-        function openDB() {
+        const UI = {
+            navItems: document.querySelectorAll('.nav-item'),
+            screens: document.querySelectorAll('.screen'),
+            toast: document.getElementById('global-toast'),
+            library: {
+                tabs: document.querySelectorAll('.sub-tab-btn'),
+                subScreens: document.querySelectorAll('.sub-screen'),
+                lists: {
+                    tracks: document.getElementById('local-tracks-list'),
+                    artists: document.getElementById('artists-list'),
+                    foryou: document.getElementById('foryou-list'),
+                    online: document.getElementById('online-results-list')
+                },
+                search: {
+                    container: document.getElementById('library-search-container'),
+                    input: document.getElementById('library-search-input')
+                },
+                btnShuffle: document.getElementById('btn-toggle-shuffle'),
+                btnChart: document.getElementById('btn-play-chart'),
+                chartSpinner: document.querySelector('.chart-spinner')
+            },
+            player: {
+                audio: document.getElementById('audio-player'),
+                mini: document.getElementById('player-mini'),
+                full: document.getElementById('player-full'),
+                miniTitle: document.getElementById('mini-title'),
+                miniArtist: document.getElementById('mini-artist'),
+                fullTitle: document.getElementById('full-title'),
+                fullArtist: document.getElementById('full-artist'),
+                btnMiniPlay: document.getElementById('btn-mini-play'),
+                iconMiniPlay: document.getElementById('icon-mini-play'),
+                btnFullPlay: document.getElementById('btn-full-play'),
+                iconFullPlay: document.getElementById('icon-full-play'),
+                seekbar: document.getElementById('player-seekbar'),
+                timeCurrent: document.getElementById('time-current'),
+                timeDuration: document.getElementById('time-duration')
+            }
+        };
+
+        // --- DATABASE ---
+        function initDB() {
             return new Promise((res, rej) => {
-                const r = indexedDB.open(DB_NAME, DB_VER);
-                r.onupgradeneeded = e => {
+                const req = indexedDB.open(CONFIG.DB_NAME, CONFIG.DB_VERSION);
+                req.onupgradeneeded = (e) => {
                     const d = e.target.result;
-                    if (!d.objectStoreNames.contains(STORE)) {
-                        const s = d.createObjectStore(STORE, { keyPath: 'id' });
+                    if (!d.objectStoreNames.contains(CONFIG.STORE_NAME)) {
+                        const s = d.createObjectStore(CONFIG.STORE_NAME, { keyPath: 'id' });
                         s.createIndex('artist', 'artist', { unique: false });
                     }
                 };
-                r.onsuccess = e => { db = e.target.result; res(db); };
-                r.onerror = rej;
+                req.onsuccess = (e) => { db = e.target.result; res(); };
+                req.onerror = rej;
             });
         }
-        function dbAll() {
-            if (!db) return Promise.resolve([]);
+        function getAllTracks() {
             return new Promise(res => {
-                const r = db.transaction(STORE, 'readonly').objectStore(STORE).getAll();
-                r.onsuccess = () => res(r.result || []);
-                r.onerror = () => res([]);
+                const tx = db.transaction(CONFIG.STORE_NAME, 'readonly');
+                const req = tx.objectStore(CONFIG.STORE_NAME).getAll();
+                req.onsuccess = () => res(req.result || []);
             });
         }
-        function dbSave(t) {
-            if (!db) return Promise.resolve();
+        function saveTrack(t) {
             return new Promise(res => {
-                const tx = db.transaction(STORE, 'readwrite');
-                tx.objectStore(STORE).put(t);
-                tx.oncomplete = res;
-                tx.onerror = res;
+                const tx = db.transaction(CONFIG.STORE_NAME, 'readwrite');
+                tx.objectStore(CONFIG.STORE_NAME).put(t);
+                tx.oncomplete = () => res();
             });
         }
-        function dbDel(id) {
-            if (!db) return Promise.resolve();
+        function deleteTrack(id) {
             return new Promise(res => {
-                const tx = db.transaction(STORE, 'readwrite');
-                tx.objectStore(STORE).delete(id);
-                tx.oncomplete = res;
-                tx.onerror = res;
+                const tx = db.transaction(CONFIG.STORE_NAME, 'readwrite');
+                tx.objectStore(CONFIG.STORE_NAME).delete(id);
+                tx.oncomplete = () => res();
             });
         }
 
-        // ── TOAST ────────────────────────────────────────
-        let toastT;
-        function toast(msg) {
-            const el = document.getElementById('toast');
-            el.textContent = msg;
-            el.classList.add('show');
-            clearTimeout(toastT);
-            toastT = setTimeout(() => el.classList.remove('show'), 3000);
+        // --- TOAST ---
+        function showToast(msg) {
+            UI.toast.textContent = msg;
+            UI.toast.classList.remove('hidden');
+            setTimeout(() => UI.toast.classList.add('hidden'), 3000);
         }
 
-        // ── NAVIGATION ───────────────────────────────────
-        document.querySelectorAll('.nav-btn').forEach(btn => {
+        // --- NAVIGATION ---
+        UI.navItems.forEach(item => {
+            item.addEventListener('click', () => {
+                UI.navItems.forEach(i => i.classList.remove('active'));
+                item.classList.add('active');
+                UI.screens.forEach(s => s.classList.remove('active'));
+                document.getElementById(item.dataset.target).classList.add('active');
+                if (item.dataset.target === 'screen-library') loadTracks();
+            });
+        });
+
+        UI.library.tabs.forEach(btn => {
             btn.addEventListener('click', () => {
-                document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+                UI.library.tabs.forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
-                document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-                document.getElementById(btn.dataset.screen).classList.add('active');
-                if (btn.dataset.screen === 'scr-library') renderTracks();
+                UI.library.subScreens.forEach(s => s.classList.remove('active'));
+                document.getElementById(`subtab-${btn.dataset.subtab}`).classList.add('active');
+
+                UI.library.search.container.classList.toggle('hidden', btn.dataset.subtab !== 'online');
+
+                if (btn.dataset.subtab === 'online' && !UI.library.lists.online.hasChildNodes()) searchOnline("");
+                if (btn.dataset.subtab === 'tracks') loadTracks();
+                if (btn.dataset.subtab === 'artists') loadArtists();
+                if (btn.dataset.subtab === 'foryou') loadForYou();
             });
         });
 
-        // ── LIBRARY SUB-TABS ─────────────────────────────
-        let activeSubTab = 'tracks';
-        document.querySelectorAll('.stab').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.stab').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                document.querySelectorAll('.sub').forEach(s => s.classList.remove('active'));
-                document.getElementById('sub-' + btn.dataset.sub).classList.add('active');
-                activeSubTab = btn.dataset.sub;
-
-                const sw = document.getElementById('search-wrap');
-                if (btn.dataset.sub === 'online') {
-                    sw.classList.add('visible');
-                    if (!document.getElementById('list-online').hasChildNodes()) searchOnline('');
-                } else {
-                    sw.classList.remove('visible');
-                }
-                if (btn.dataset.sub === 'tracks') renderTracks();
-                if (btn.dataset.sub === 'artists') renderArtists();
-                if (btn.dataset.sub === 'foryou') loadForYou();
-            });
-        });
-
-        // Shuffle
-        document.getElementById('shuffle-btn').addEventListener('click', () => {
-            shuffle = !shuffle;
-            document.getElementById('shuffle-btn').classList.toggle('on', shuffle);
-            toast(shuffle ? 'Shuffle ON' : 'Shuffle OFF');
-        });
-
-        // Chart
-        document.getElementById('chart-btn').addEventListener('click', playChart);
-
-        // Search debounce
-        let debT;
-        document.getElementById('search-input').addEventListener('input', e => {
-            clearTimeout(debT);
-            debT = setTimeout(() => e.target.value.trim() && searchOnline(e.target.value.trim()), 900);
-        });
-
-        // ── TRACKS VIEW ──────────────────────────────────
-        async function renderTracks() {
-            const list = document.getElementById('list-tracks');
-            list.innerHTML = '';
-            const tracks = await dbAll();
-            const sorted = tracks.sort((a, b) => (a.artist + a.title).localeCompare(b.artist + b.title));
-            if (!sorted.length) { list.innerHTML = '<div class="empty">Library is empty</div>'; return; }
+        // --- LOGIC ---
+        async function loadTracks() {
+            const tracks = await getAllTracks();
+            const sorted = tracks.sort((a, b) => a.artist.localeCompare(b.artist));
+            UI.library.lists.tracks.innerHTML = sorted.length ? '' : '<div style="text-align:center; padding:40px; opacity:0.5;">No tracks in library</div>';
             sorted.forEach((t, i) => {
-                list.appendChild(makeRow(t, false,
-                    () => playList(sorted, i),
-                    async () => { if (confirm('Delete?')) { await dbDel(t.id); toast('Deleted'); renderTracks(); } }
-                ));
+                UI.library.lists.tracks.appendChild(createRow(t, false, () => playList(sorted, i), async (e) => {
+                    e.stopPropagation();
+                    if (confirm('Delete?')) { await deleteTrack(t.id); loadTracks(); showToast('Deleted'); }
+                }));
             });
         }
 
-        // ── ARTISTS VIEW ─────────────────────────────────
-        async function renderArtists() {
-            const cont = document.getElementById('list-artists');
+        async function loadArtists() {
+            const tracks = await getAllTracks();
+            const cont = UI.library.lists.artists;
             cont.innerHTML = '';
-            const tracks = await dbAll();
-            if (!tracks.length) { cont.innerHTML = '<div class="empty">No artists</div>'; return; }
             const map = {};
             tracks.forEach(t => { if (!map[t.artist]) map[t.artist] = []; map[t.artist].push(t); });
-            Object.keys(map).sort().forEach(name => {
-                const g = document.createElement('div'); g.className = 'ag';
-                g.innerHTML = `<div class="ag-head"><div class="ag-avatar"><span class="material-symbols-outlined">person</span></div><div class="ag-name">${name}</div></div>`;
-                const tl = document.createElement('div'); tl.className = 'tlist';
-                map[name].forEach((t, i) => tl.appendChild(makeRow(t, false, () => playList(map[name], i))));
-                g.appendChild(tl);
+            Object.keys(map).sort().forEach(art => {
+                const g = document.createElement('div'); g.className = 'artist-group';
+                g.innerHTML = `<div class="artist-group-header"><div class="artist-group-avatar"><span class="material-symbols-outlined">person</span></div><div class="artist-group-name">${art}</div></div>`;
+                map[art].forEach((t, i) => g.appendChild(createRow(t, false, () => playList(map[art], i))));
                 cont.appendChild(g);
             });
         }
 
-        // ── FOR YOU ──────────────────────────────────────
-        let forYouLoaded = false;
         async function loadForYou() {
-            if (forYouLoaded) return;
-            const cont = document.getElementById('list-foryou');
-            cont.innerHTML = '<div class="spinner-center"><div class="spin"></div></div>';
+            const cont = UI.library.lists.foryou;
+            if (cont.hasChildNodes()) return;
+            cont.innerHTML = '<div style="display:flex; justify-content:center; padding:40px;"><div class="loading-spinner"></div></div>';
             try {
-                const res = await fetch(SCRIPT_URL + '?action=getCards');
-                if (!res.ok) throw new Error('Status ' + res.status);
+                const res = await fetch(`${CONFIG.SCRIPT_URL}?action=getCards`);
                 const data = await res.json();
                 cont.innerHTML = '';
-                if (!data || !data.length) {
-                    cont.innerHTML = '<div class="empty">No data from spreadsheet</div>';
-                    return;
-                }
-                forYouLoaded = true;
-                // API schema: { executor: "Artist", photo: "url1,url2,...", track: "url1,url2,..." }
-                data.sort(() => Math.random() - .5).forEach(item => {
-                    const name = item.executor || 'Unknown';
-                    const photos = (item.photo || '').split(',').map(s => s.trim()).filter(Boolean);
-                    const trackUrls = (item.track || '').split(',').map(s => s.trim()).filter(Boolean);
-
-                    const card = document.createElement('div');
-                    card.className = 'ay-card';
-
-                    const photoHtml = photos.length
-                        ? `<img class="ay-photo" src="${photos[photos.length - 1]}" onerror="this.style.display='none'">`
-                        : `<div class="ay-photo-placeholder"><span class="material-symbols-outlined" style="font-size:60px;color:rgba(255,255,255,.5)">person</span></div>`;
-
+                data.sort(() => 0.5 - Math.random()).forEach(item => {
+                    const card = document.createElement('div'); card.className = 'artist-media-card';
+                    const photo = (item.photos && item.photos.length) ? item.photos[item.photos.length - 1] : null;
+                    const photoHtml = photo ? `<img src="${photo}" class="artist-media-photo">` : `<div class="artist-media-photo" style="display:flex; align-items:center; justify-content:center;"><span class="material-symbols-outlined" style="font-size:48px; opacity:0.3;">person</span></div>`;
                     let rows = '';
-                    trackUrls.forEach((url, i) => {
-                        // Extract a readable title from URL filename
-                        const filename = decodeURIComponent(url.split('/').pop().split('?')[0]);
-                        const titleClean = filename.replace(/\.(mp3|m4a|ogg|flac)$/i, '').replace(/_/g, ' ').replace(/-/g, '–');
-                        rows += `<div class="trow" onclick="playRemote('${esc(titleClean)}','${esc(name)}','${esc(url)}')">
-                            <div class="tcover online"><span class="material-symbols-outlined">music_note</span></div>
-                            <div class="tinfo"><div class="ttitle">${titleClean}</div><div class="tartist">${name}</div></div>
-                            <button class="taction" onclick="event.stopPropagation();dlAndSave('${esc(titleClean)}','${esc(name)}','${esc(url)}')">
-                                <span class="material-symbols-outlined">cloud_download</span>
-                            </button>
+                    item.tracks.forEach(t => {
+                        rows += `<div class="track-row" onclick="playRemote('${t.title.replace(/'/g, "")}', '${item.name.replace(/'/g, "")}', '${t.url}')">
+                            <div class="track-cover gradient-cover online"><span class="material-symbols-outlined">public</span></div>
+                            <div class="track-info"><div class="track-title">${t.title}</div><div class="track-artist">${item.name}</div></div>
+                            <button class="track-action color-pink"><span class="material-symbols-outlined">cloud_download</span></button>
                         </div>`;
                     });
-
-                    card.innerHTML = `${photoHtml}<div class="ay-body"><div class="ay-title">${name}</div><div class="tlist">${rows}</div></div>`;
+                    card.innerHTML = `${photoHtml}<div class="artist-media-content"><div class="artist-media-title">${item.name}</div><div class="track-list">${rows}</div></div>`;
                     cont.appendChild(card);
                 });
-            } catch (e) {
-                cont.innerHTML = `<div class="empty">Error: ${e.message}</div>`;
-                console.error('ForYou error:', e);
-            }
-        }
-        function esc(s) { return String(s || '').replace(/'/g, "\\'"); }
-
-        // ── CHART ────────────────────────────────────────
-        async function playChart() {
-            toast('Loading chart…');
-            try {
-                const res = await hitmotop('');
-                if (!res.length) { toast('No chart data'); return; }
-                const sh = res.sort(() => Math.random() - .5).slice(0, 20);
-                playList(sh, 0);
-                toast('Playing Your Chart');
-            } catch (e) { toast('Chart unavailable'); }
+            } catch (e) { cont.innerHTML = 'Error loading recommendations'; }
         }
 
-        // ── ONLINE SEARCH ────────────────────────────────
         async function searchOnline(q) {
-            const cont = document.getElementById('list-online');
-            cont.innerHTML = '<div class="spinner-center"><div class="spin"></div></div>';
+            UI.library.lists.online.innerHTML = '<div style="display:flex; justify-content:center; padding:40px;"><div class="loading-spinner"></div></div>';
             try {
-                const res = await hitmotop(q);
-                cont.innerHTML = '';
-                if (!res.length) { cont.innerHTML = '<div class="empty">No results</div>'; return; }
+                const res = await fetchMuzofond(q);
+                UI.library.lists.online.innerHTML = '';
                 res.forEach((t, i) => {
-                    cont.appendChild(makeRow(t, true,
-                        () => playList(res, i),
-                        () => dlAndSave(t.title, t.artist, t.filePath)
-                    ));
+                    UI.library.lists.online.appendChild(createRow(t, true, () => playList(res, i), (e) => { e.stopPropagation(); dlSave(t); }));
                 });
-            } catch (e) { cont.innerHTML = '<div class="empty">Network error</div>'; }
+            } catch (e) { UI.library.lists.online.innerHTML = 'Search error'; }
         }
 
-        // ── MUZOFOND (replacing Hitmotop) ──────────────────
-        async function hitmotop(q) {
-            const target = q
-                ? `https://muzofond.fm/search/${encodeURIComponent(q)}`
-                : `https://muzofond.fm/`;
-            const res = await fetch(PROXY + encodeURIComponent(target), { signal: AbortSignal.timeout(10000) });
-            if (!res.ok) throw new Error('Proxy error ' + res.status);
-            const html = await res.text();
+        async function fetchMuzofond(q) {
+            const target = q ? `https://muzofond.fm/search/${encodeURIComponent(q)}` : `https://muzofond.fm/`;
+            const html = await fetch(CONFIG.PROXY + encodeURIComponent(target)).then(r => r.text());
+            const items = [];
+            const blocks = html.split('<li class="item"');
+            for (let i = 1; i < blocks.length; i++) {
+                const b = blocks[i];
+                const u = /data-url="([^"]+)"/.exec(b), a = /<span class="artist">([^<]+)<\/span>/.exec(b), t = /<span class="track">([^<]+)<\/span>/.exec(b);
+                if (u && a && t) items.push({ id: 'net_' + Math.random().toString(36).slice(2), title: t[1].trim(), artist: a[1].trim(), filePath: u[1], isOnline: true });
+            }
+            return items;
+        }
 
-            const out = [];
+        async function dlSave(t) {
+            showToast(`Downloading: ${t.title}...`);
             try {
-                // Muzofond structure: <li class="item"> blocks containing artist, track, and data-url
-                const blocks = html.split('<li class="item"');
-                for (let i = 1; i < blocks.length; i++) {
-                    const block = blocks[i];
-                    const urlMatch = /data-url="([^"]+)"/.exec(block);
-                    const artistMatch = /<span class="artist">([^<]+)<\/span>/.exec(block);
-                    const trackMatch = /<span class="track">([^<]+)<\/span>/.exec(block);
-
-                    if (urlMatch && artistMatch && trackMatch) {
-                        out.push({
-                            id: 'net_' + Math.random().toString(36).slice(2),
-                            title: trackMatch[1].trim(),
-                            artist: artistMatch[1].trim(),
-                            filePath: urlMatch[1],
-                            cover: null, // Muzofond doesn't have covers in simple search
-                            genre: 'Online',
-                            isOnline: true
-                        });
-                    }
-                }
-            } catch (e) {
-                console.error("Muzofond parse error:", e);
-            }
-            return out;
-        }
-        // ── DOWNLOAD & SAVE ──────────────────────────────
-        async function dlAndSave(title, artist, url) {
-            toast('Downloading: ' + title + '…');
-            try {
-                const blob = await fetch(PROXY + encodeURIComponent(url)).then(r => { if (!r.ok) throw new Error('fail'); return r.blob(); });
-                await dbSave({ id: 'loc_' + Date.now(), title, artist, filePath: url, genre: 'Online', blob });
-                toast('Saved: ' + title);
-                if (activeSubTab === 'tracks') renderTracks();
-            } catch (e) { toast('Error: ' + e.message); }
-        }
-        function playRemote(title, artist, url) {
-            playList([{ id: 'tmp', title, artist, filePath: url, isOnline: true }], 0);
-            dlAndSave(title, artist, url);
+                const blob = await fetch(CONFIG.PROXY + encodeURIComponent(t.filePath)).then(r => r.blob());
+                await saveTrack({ id: 'loc_' + Date.now(), title: t.title, artist: t.artist, filePath: t.filePath, blob });
+                showToast(`Saved ${t.title}`);
+                if (document.getElementById('subtab-tracks').classList.contains('active')) loadTracks();
+            } catch (e) { showToast('Download failed'); }
         }
 
-        // ── TRACK ROW ────────────────────────────────────
-        function makeRow(t, isOnline, onClick, onAction) {
-            const row = document.createElement('div'); row.className = 'trow';
-            row.onclick = onClick;
-            const coverCls = isOnline ? 'tcover online' : 'tcover';
-            const icon = isOnline ? 'public' : 'music_note';
-            const actionHtml = onAction
-                ? `<button class="taction${isOnline ? '' : ' del'}"><span class="material-symbols-outlined">${isOnline ? 'cloud_download' : 'delete'}</span></button>`
-                : '';
-            row.innerHTML = `<div class="${coverCls}"><span class="material-symbols-outlined">${icon}</span></div><div class="tinfo"><div class="ttitle">${t.title}</div><div class="tartist">${t.artist}</div></div>${actionHtml}`;
-            if (onAction) {
-                const btn = row.querySelector('.taction');
-                if (btn) btn.onclick = e => { e.stopPropagation(); onAction(); };
-            }
-            return row;
+        function playRemote(t, a, u) {
+            const track = { id: 'tmp', title: t, artist: a, filePath: u, isOnline: true };
+            playList([track], 0);
+            dlSave(track);
         }
 
-        // ── IMPORT TAB ───────────────────────────────────
-        document.getElementById('import-btn').addEventListener('click', async () => {
-            const text = document.getElementById('import-text').value.trim();
-            if (!text) { toast('Input is empty'); return; }
-            const statusBox = document.getElementById('import-status');
-            const statusText = document.getElementById('import-status-text');
-            const progWrap = document.getElementById('prog-wrap');
-            const progBar = document.getElementById('prog-bar');
-            const log = document.getElementById('import-log');
-            const btn = document.getElementById('import-btn');
-            log.innerHTML = '';
-            statusBox.style.display = 'flex';
-            progWrap.style.display = 'block';
-            progBar.style.width = '0%';
-            btn.disabled = true;
-
-            let list = [];
-            if (text.includes('data-title="')) {
-                const re = /data-title="(.*?)".*?data-artist="(.*?)"/g;
-                let m;
-                while ((m = re.exec(text))) list.push({ title: m[1].trim(), artist: m[2].trim() });
-            } else {
-                text.split('\n').forEach(line => {
-                    const p = line.trim().split(' - ');
-                    if (p.length >= 2) list.push({ artist: p[0].trim(), title: p.slice(1).join(' - ').trim() });
-                });
-            }
-
-            if (!list.length) { addLog('Could not parse any tracks.', false); btn.disabled = false; return; }
-            addLog(`Found ${list.length} tracks. Searching…`, true);
-
-            let ok = 0;
-            for (let i = 0; i < list.length; i++) {
-                const q = list[i].artist + ' ' + list[i].title;
-                statusText.textContent = `(${i + 1}/${list.length}) ${q}`;
-                try {
-                    const res = await hitmotop(q);
-                    if (res.length) {
-                        await dlAndSave(res[0].title, res[0].artist, res[0].filePath);
-                        addLog('✓ ' + res[0].artist + ' – ' + res[0].title, true);
-                        ok++;
-                    } else { addLog('✗ Not found: ' + q, false); }
-                } catch (e) { addLog('✗ Error: ' + q, false); }
-                progBar.style.width = ((i + 1) / list.length * 100) + '%';
-                await new Promise(r => setTimeout(r, 700));
-            }
-            statusText.textContent = `Done! Saved ${ok} / ${list.length} tracks.`;
-            btn.disabled = false;
-        });
-        function addLog(msg, ok) {
-            const d = document.createElement('div');
-            d.className = 'log-entry';
-            d.style.color = ok ? '#81C784' : '#E57373';
-            d.textContent = msg;
-            document.getElementById('import-log').appendChild(d);
+        function createRow(t, online, onClick, onAction) {
+            const r = document.createElement('div'); r.className = 'track-row'; r.onclick = onClick;
+            const icon = online ? 'public' : 'music_note';
+            const bg = online ? 'gradient-cover online' : 'gradient-cover';
+            const action = online ? '<button class="track-action color-pink"><span class="material-symbols-outlined">cloud_download</span></button>' : '<button class="track-action color-red"><span class="material-symbols-outlined">delete</span></button>';
+            r.innerHTML = `<div class="track-cover ${bg}"><span class="material-symbols-outlined">${icon}</span></div><div class="track-info"><div class="track-title">${t.title}</div><div class="track-artist">${t.artist}</div></div>${action}`;
+            const btn = r.querySelector('.track-action');
+            if (btn) btn.onclick = onAction;
+            return r;
         }
 
-        // ── EXECUTOR TAB ─────────────────────────────────
-        document.getElementById('ex-btn').addEventListener('click', async () => {
-            const artist = document.getElementById('ex-artist').value.trim();
-            const pass = document.getElementById('ex-pass').value.trim();
-            const photo = document.getElementById('ex-photo').value.trim();
-            const title = document.getElementById('ex-title').value.trim();
-            const url = document.getElementById('ex-url').value.trim();
-            const msgEl = document.getElementById('ex-msg');
-            if (!artist || !pass || !title || !url) { exMsg('Fill all required fields', false); return; }
-            document.getElementById('ex-btn').disabled = true;
-            exMsg('Sending…', true);
-            try {
-                const r = await fetch(SCRIPT_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify({ action: 'upload', artist, password: pass, photoUrl: photo, title, url })
-                });
-                const text = await r.text();
-                exMsg(r.ok && text.includes('Success') ? 'Uploaded successfully!' : 'Server: ' + text, r.ok);
-                if (r.ok) { document.getElementById('ex-title').value = ''; document.getElementById('ex-url').value = ''; }
-            } catch (e) { exMsg('Network error: ' + e.message, false); }
-            document.getElementById('ex-btn').disabled = false;
-        });
-        function exMsg(msg, ok) {
-            const el = document.getElementById('ex-msg');
-            el.className = ok ? 'status-success' : 'status-error';
-            el.textContent = msg;
-            el.style.display = 'block';
-            const log = document.getElementById('ex-log');
-            const d = document.createElement('div'); d.className = 'log-entry';
-            d.style.color = ok ? '#81C784' : '#E57373';
-            d.textContent = '[' + new Date().toLocaleTimeString() + '] ' + msg;
-            log.prepend(d);
-        }
-
-        // ── PLAYER ───────────────────────────────────────
-        const audio = document.getElementById('audio');
-
-        function playList(list, i) {
-            if (!list || !list.length) return;
-            playlist = list; idx = i;
-            playCurrent();
-        }
-        async function playCurrent() {
-            const t = playlist[idx];
-            document.getElementById('mini-title').textContent = t.title;
-            document.getElementById('mini-artist').textContent = t.artist;
-            document.getElementById('pf-title').textContent = t.title;
-            document.getElementById('pf-artist').textContent = t.artist;
-            document.getElementById('player-mini').classList.add('visible');
-
-            if (blobUrl) { URL.revokeObjectURL(blobUrl); blobUrl = null; }
+        // --- PLAYER ---
+        const audio = UI.player.audio;
+        function playList(list, i) { playlist = list; curIdx = i; playCur(); }
+        async function playCur() {
+            const t = playlist[curIdx];
+            UI.player.miniTitle.textContent = UI.player.fullTitle.textContent = t.title;
+            UI.player.miniArtist.textContent = UI.player.fullArtist.textContent = t.artist;
+            UI.player.mini.classList.remove('hidden');
+            if (blobUrl) URL.revokeObjectURL(blobUrl);
             if (t.blob) { blobUrl = URL.createObjectURL(t.blob); audio.src = blobUrl; }
-            else { audio.src = PROXY + encodeURIComponent(t.filePath); }
-
-            try { await audio.play(); } catch (e) { }
+            else { audio.src = CONFIG.PROXY + encodeURIComponent(t.filePath); }
+            audio.play().catch(() => { });
             if ('mediaSession' in navigator) {
                 navigator.mediaSession.metadata = new MediaMetadata({ title: t.title, artist: t.artist });
             }
         }
-        function playNext() { idx = shuffle ? Math.floor(Math.random() * playlist.length) : (idx + 1) % playlist.length; playCurrent(); }
-        function playPrev() { idx = (idx - 1 + playlist.length) % playlist.length; playCurrent(); }
+        function playNext() { curIdx = isShuffle ? Math.floor(Math.random() * playlist.length) : (curIdx + 1) % playlist.length; playCur(); }
+        function playPrev() { curIdx = (curIdx - 1 + playlist.length) % playlist.length; playCur(); }
 
-        const togglePlay = () => audio.paused ? audio.play() : audio.pause();
-        audio.addEventListener('play', () => { document.getElementById('mini-play-ic').textContent = 'pause'; document.getElementById('pf-play-ic').textContent = 'pause'; });
-        audio.addEventListener('pause', () => { document.getElementById('mini-play-ic').textContent = 'play_arrow'; document.getElementById('pf-play-ic').textContent = 'play_arrow'; });
-        audio.addEventListener('ended', playNext);
-        audio.addEventListener('timeupdate', () => {
-            if (!audio.duration) return;
-            document.getElementById('seekbar').value = audio.currentTime / audio.duration * 100;
-            document.getElementById('t-cur').textContent = fmt(audio.currentTime);
-        });
-        audio.addEventListener('loadedmetadata', () => document.getElementById('t-dur').textContent = fmt(audio.duration));
-        document.getElementById('seekbar').addEventListener('input', e => { if (audio.duration) audio.currentTime = e.target.value / 100 * audio.duration; });
-        document.getElementById('mini-play-btn').addEventListener('click', e => { e.stopPropagation(); togglePlay(); });
-        document.getElementById('pf-play').addEventListener('click', togglePlay);
-        document.getElementById('pf-next').addEventListener('click', playNext);
-        document.getElementById('pf-prev').addEventListener('click', playPrev);
-        document.getElementById('player-mini').addEventListener('click', () => { document.getElementById('player-full').classList.add('visible'); });
-        document.getElementById('pf-collapse').addEventListener('click', () => document.getElementById('player-full').classList.remove('visible'));
-        document.getElementById('pf-close').addEventListener('click', () => { audio.pause(); audio.src = ''; document.getElementById('player-full').classList.remove('visible'); document.getElementById('player-mini').classList.remove('visible'); });
-        if ('mediaSession' in navigator) {
-            navigator.mediaSession.setActionHandler('play', () => audio.play());
-            navigator.mediaSession.setActionHandler('pause', () => audio.pause());
-            navigator.mediaSession.setActionHandler('nexttrack', playNext);
-            navigator.mediaSession.setActionHandler('previoustrack', playPrev);
-        }
-        function fmt(s) { if (!s || isNaN(s)) return '0:00'; const m = Math.floor(s / 60), sec = Math.floor(s % 60); return m + ':' + (sec < 10 ? '0' : '') + sec; }
+        audio.ontimeupdate = () => { if (audio.duration) { UI.player.seekbar.value = (audio.currentTime / audio.duration) * 100; UI.player.timeCurrent.textContent = fmt(audio.currentTime); } };
+        audio.onloadedmetadata = () => { UI.player.timeDuration.textContent = fmt(audio.duration); };
+        audio.onended = playNext;
+        UI.player.seekbar.oninput = (e) => { if (audio.duration) audio.currentTime = audio.duration * (e.target.value / 100); };
 
-        // ── INIT ─────────────────────────────────────────
-        openDB().then(() => renderTracks()).catch(() => renderTracks());
+        const toggle = () => audio.paused ? audio.play() : audio.pause();
+        UI.player.btnMiniPlay.onclick = (e) => { e.stopPropagation(); toggle(); };
+        UI.player.btnFullPlay.onclick = toggle;
+        document.getElementById('btn-full-next').onclick = playNext;
+        document.getElementById('btn-full-prev').onclick = playPrev;
 
-        // Register SW
-        if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => { });
-        function copyIosCmd() {
-            const cmd = document.getElementById('ios-cmd').textContent;
-            navigator.clipboard.writeText(cmd).then(() => toast('Command copied!'));
-        }
+        audio.onplay = () => UI.player.iconMiniPlay.textContent = UI.player.iconFullPlay.textContent = 'pause';
+        audio.onpause = () => UI.player.iconMiniPlay.textContent = UI.player.iconFullPlay.textContent = 'play_arrow';
+
+        UI.player.mini.onclick = () => UI.player.full.classList.remove('hidden');
+        document.getElementById('btn-full-collapse').onclick = () => UI.player.full.classList.add('hidden');
+        document.getElementById('btn-full-close').onclick = () => { audio.pause(); audio.src = ''; UI.player.mini.classList.add('hidden'); UI.player.full.classList.add('hidden'); };
+
+        function fmt(s) { const m = Math.floor(s / 60), sec = Math.floor(s % 60); return m + ':' + (sec < 10 ? '0' : '') + sec; }
+
+        // --- IMPORT ---
+        document.getElementById('btn-run-import').onclick = async () => {
+            const val = document.getElementById('import-input').value.trim();
+            if (!val) return;
+            const log = document.getElementById('import-results'); log.innerHTML = '';
+            const status = document.getElementById('import-status'); status.classList.remove('hidden');
+            const prog = document.getElementById('import-progress-container'); prog.classList.remove('hidden');
+            const fill = document.getElementById('import-progress-fill'); fill.style.width = '0%';
+
+            let list = [];
+            if (val.includes('data-title="')) {
+                const re = /data-title="(.*?)".*?data-artist="(.*?)"/g; let m;
+                while ((m = re.exec(val))) list.push({ title: m[1].trim(), artist: m[2].trim() });
+            } else {
+                val.split('\n').filter(l => l.trim()).forEach(l => {
+                    const p = l.split('-'); if (p.length >= 2) list.push({ artist: p[0].trim(), title: p.slice(1).join('-').trim() });
+                });
+            }
+            document.getElementById('btn-run-import').disabled = true;
+            for (let i = 0; i < list.length; i++) {
+                const q = `${list[i].artist} ${list[i].title}`;
+                document.getElementById('import-status-text').textContent = `Processing (${i + 1}/${list.length})`;
+                const res = await fetchMuzofond(q);
+                if (res.length) { await dlSave(res[0]); log.innerHTML += `<div style="font-size:12px; opacity:0.7;">✓ Saved: ${res[0].artist} - ${res[0].title}</div>`; }
+                else { log.innerHTML += `<div style="font-size:12px; color:#E57373;">✗ Not found: ${q}</div>`; }
+                fill.style.width = `${((i + 1) / list.length) * 100}%`;
+                await new Promise(r => setTimeout(r, 800));
+            }
+            document.getElementById('btn-run-import').disabled = false;
+            status.classList.add('hidden');
+        };
+
+        // --- EXECUTOR ---
+        document.getElementById('btn-run-executor').onclick = async () => {
+            const b = document.getElementById('btn-run-executor'); b.disabled = true;
+            const resEl = document.getElementById('executor-results');
+            const msg = (s, ok) => {
+                const st = document.getElementById('exec-status'); st.textContent = s; st.className = ok ? 'hidden' : '';
+                st.style.background = ok ? 'rgba(76,175,80,0.2)' : 'rgba(244,67,54,0.2)';
+                st.style.color = ok ? '#81C784' : '#E57373'; st.classList.remove('hidden');
+                resEl.innerHTML = `<div style="font-size:12px; color:${ok ? '#81C784' : '#E57373'}">[${new Date().toLocaleTimeString()}] ${s}</div>` + resEl.innerHTML;
+            };
+            try {
+                const payload = {
+                    action: 'upload',
+                    artist: document.getElementById('exec-artist').value.trim(),
+                    password: document.getElementById('exec-password').value.trim(),
+                    photoUrl: document.getElementById('exec-photo').value.trim(),
+                    title: document.getElementById('exec-title').value.trim(),
+                    url: document.getElementById('exec-url').value.trim()
+                };
+                const res = await fetch(CONFIG.SCRIPT_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) });
+                const text = await res.text();
+                if (text.includes('Success')) { msg("Success!", true); document.getElementById('exec-title').value = ''; document.getElementById('exec-url').value = ''; }
+                else msg(text, false);
+            } catch (e) { msg("Error", false); }
+            b.disabled = false;
+        };
+
+        // --- INIT ---
+        initDB().then(() => loadTracks());
+        let deb; document.getElementById('library-search-input').oninput = (e) => { clearTimeout(deb); deb = setTimeout(() => searchOnline(e.target.value.trim()), 1000); };
+        document.getElementById('btn-toggle-shuffle').onclick = () => { isShuffle = !isShuffle; UI.library.btnShuffle.classList.toggle('active', isShuffle); };
+        document.getElementById('btn-play-chart').onclick = async () => {
+            UI.library.chartSpinner.classList.remove('hidden');
+            const res = await fetchMuzofond("");
+            UI.library.chartSpinner.classList.add('hidden');
+            const s = res.sort(() => 0.5 - Math.random()).slice(0, 20);
+            if (s.length) { playList(s, 0); showToast("Playing Your Chart"); }
+        };
     </script>
 </body>
 
