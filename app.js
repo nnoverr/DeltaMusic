@@ -34,18 +34,23 @@ async function fetchWithRetry(url, options = {}, isText = false) {
 
     for (const proxy of shuffledProxies) {
         try {
-            // Some proxies need encoded URLs, some don't.
             const needsEncoding = proxy.includes('allorigins') || proxy.includes('codetabs');
             const proxiedUrl = proxy + (needsEncoding ? encodeURIComponent(url) : url);
 
             const res = await fetch(proxiedUrl, options);
             if (res.ok) {
-                let data = isText ? await res.text() : res;
-                // AllOrigins wraps the content in a JSON object
-                if (proxy.includes('allorigins') && isText) {
-                    try { data = JSON.parse(data).contents; } catch (e) { }
+                if (isText) {
+                    let text = await res.text();
+                    // AllOrigins can return a JSON with a 'contents' field
+                    if (proxy.includes('allorigins')) {
+                        try {
+                            const json = JSON.parse(text);
+                            if (json.contents) text = json.contents;
+                        } catch (e) { }
+                    }
+                    return text;
                 }
-                return data;
+                return res;
             }
             console.warn(`Proxy ${proxy} returned ${res.status}`);
         } catch (e) {
@@ -54,7 +59,7 @@ async function fetchWithRetry(url, options = {}, isText = false) {
         }
     }
 
-    // Priority 3: Final attempt via direct fetch (might work if CORS is disabled on target)
+    // Priority 3: Final attempt via direct fetch
     try {
         const res = await fetch(url, options);
         if (res.ok) return isText ? res.text() : res;
@@ -68,7 +73,6 @@ let playlist = [];
 let curIdx = -1;
 let isShuffle = false;
 let blobUrl = null;
-
 let UI = {};
 
 // --- DATABASE ---
@@ -125,9 +129,12 @@ function initNav() {
             navItems.forEach(i => i.classList.remove('active'));
             item.classList.add('active');
             UI.screens.forEach(s => s.classList.remove('active'));
-            const target = document.getElementById(item.dataset.target);
-            if (target) target.classList.add('active');
-            if (item.dataset.target === 'screen-library') loadTracks();
+            const targetId = item.dataset.target;
+            const target = document.getElementById(targetId);
+            if (target) {
+                target.classList.add('active');
+                if (targetId === 'screen-library') loadTracks();
+            }
         });
     });
 
@@ -136,15 +143,16 @@ function initNav() {
             UI.library.tabs.forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             UI.library.subScreens.forEach(s => s.classList.remove('active'));
-            const subtab = document.getElementById(`subtab-${btn.dataset.subtab}`);
+            const subId = btn.dataset.subtab;
+            const subtab = document.getElementById(`subtab-${subId}`);
             if (subtab) subtab.classList.add('active');
 
-            UI.library.search.container.classList.toggle('hidden', btn.dataset.subtab !== 'online');
+            UI.library.search.container.classList.toggle('hidden', subId !== 'online');
 
-            if (btn.dataset.subtab === 'online' && !UI.library.lists.online.hasChildNodes()) searchOnline("");
-            if (btn.dataset.subtab === 'tracks') loadTracks();
-            if (btn.dataset.subtab === 'artists') loadArtists();
-            if (btn.dataset.subtab === 'foryou') loadForYou();
+            if (subId === 'online' && !UI.library.lists.online.hasChildNodes()) searchOnline("");
+            if (subId === 'tracks') loadTracks();
+            if (subId === 'artists') loadArtists();
+            if (subId === 'foryou') loadForYou();
         });
     });
 }
@@ -181,8 +189,8 @@ async function loadForYou() {
     if (cont.hasChildNodes() && cont.children.length > 1) return;
     cont.innerHTML = '<div style="display:flex; justify-content:center; padding:40px;"><div class="loading-spinner"></div></div>';
     try {
-        const html = await fetchWithRetry(`${CONFIG.SCRIPT_URL}?action=getCards`, {}, true);
-        const data = JSON.parse(html);
+        const text = await fetchWithRetry(`${CONFIG.SCRIPT_URL}?action=getCards`, {}, true);
+        const data = JSON.parse(text);
         cont.innerHTML = '';
         data.sort(() => 0.5 - Math.random()).forEach(item => {
             const card = document.createElement('div'); card.className = 'artist-media-card';
@@ -190,19 +198,20 @@ async function loadForYou() {
             const photoHtml = photo ? `<img src="${photo}" class="artist-media-photo">` : `<div class="artist-media-photo" style="display:flex; align-items:center; justify-content:center;"><span class="material-symbols-outlined" style="font-size:48px; opacity:0.3;">person</span></div>`;
             let rows = '';
             item.tracks.forEach(t => {
-                const safeTitle = t.title.replace(/'/g, "\\'");
-                const safeArtist = item.name.replace(/'/g, "\\'");
-                rows += `<div class="track-row" onclick="playRemote('${safeTitle}', '${safeArtist}', '${t.url}')">
+                const sT = t.title.replace(/'/g, "\\'");
+                const sA = item.name.replace(/'/g, "\\'");
+                rows += `<div class="track-row" onclick="playRemote('${sT}', '${sA}', '${t.url}')">
                     <div class="track-cover gradient-cover online"><span class="material-symbols-outlined">public</span></div>
                     <div class="track-info"><div class="track-title">${t.title}</div><div class="track-artist">${item.name}</div></div>
-                    <button class="track-action color-pink"><span class="material-symbols-outlined">cloud_download</span></button>
+                    <button class="track-action color-pink" onclick="event.stopPropagation(); window.dlSaveTarget('${sT}', '${sA}', '${t.url}')"><span class="material-symbols-outlined">cloud_download</span></button>
                 </div>`;
             });
             card.innerHTML = `${photoHtml}<div class="artist-media-content"><div class="artist-media-title">${item.name}</div><div class="track-list">${rows}</div></div>`;
             cont.appendChild(card);
         });
-    } catch (e) { cont.innerHTML = '<div style="text-align:center; padding:40px; opacity:0.5;">Error loading recommendations</div>'; }
+    } catch (e) { cont.innerHTML = '<div style="text-align:center; padding:40px; opacity:0.5;">Recommendations unavailable</div>'; }
 }
+window.dlSaveTarget = (t, a, u) => dlSave({ title: t, artist: a, filePath: u });
 
 async function searchOnline(q) {
     UI.library.lists.online.innerHTML = '<div style="display:flex; justify-content:center; padding:40px;"><div class="loading-spinner"></div></div>';
@@ -216,7 +225,7 @@ async function searchOnline(q) {
         res.forEach((t, i) => {
             UI.library.lists.online.appendChild(createRow(t, true, () => playList(res, i), (e) => { e.stopPropagation(); dlSave(t); }));
         });
-    } catch (e) { UI.library.lists.online.innerHTML = '<div style="text-align:center; padding:40px; opacity:0.5;">Search service unavailable. Try again.</div>'; }
+    } catch (e) { UI.library.lists.online.innerHTML = '<div style="text-align:center; padding:40px; opacity:0.5;">Search failed. Try again.</div>'; }
 }
 
 async function fetchMuzofond(q) {
@@ -246,7 +255,6 @@ async function dlSave(t) {
 function playRemote(t, a, u) {
     const track = { id: 'tmp', title: t, artist: a, filePath: u, isOnline: true };
     playList([track], 0);
-    dlSave(track);
 }
 
 function createRow(t, online, onClick, onAction) {
@@ -273,13 +281,10 @@ async function playCur() {
         blobUrl = URL.createObjectURL(t.blob);
         UI.player.audio.src = blobUrl;
     } else {
-        // Rotational proxy for direct playback
         const shuffledProxies = [...CONFIG.PROXIES].sort(() => Math.random() - 0.5);
-        let success = false;
         for (const proxy of shuffledProxies) {
             const needsEncoding = proxy.includes('allorigins') || proxy.includes('codetabs');
             UI.player.audio.src = proxy + (needsEncoding ? encodeURIComponent(t.filePath) : t.filePath);
-            success = true; // Setting src is synchronous, metadata loading will prove if it works
             break;
         }
     }
