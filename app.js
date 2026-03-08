@@ -1,5 +1,5 @@
 /* ========================================= */
-/* DeltaMusic PWA Logic (Android 1:1 Port)   */
+/* DeltaMusic PWA Logic (VPS Linux)          */
 /* ========================================= */
 
 const CONFIG = {
@@ -21,17 +21,20 @@ async function fetchWithRetry(url, options = {}, isText = false) {
     let lastError;
     const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
-    // Priority 1: Local Proxy (if available)
-    if (isLocal) {
-        try {
-            const res = await fetch("/api/proxy?url=" + encodeURIComponent(url), options);
-            if (res.ok) return isText ? res.text() : res;
-        } catch (e) { console.warn("Local proxy failed..."); }
+    // Priority 1: Internal/Local Proxy (DEDICATED VPS PROXY)
+    try {
+        const proxyPath = isLocal ? "/api/proxy" : "/proxy";
+        const res = await fetch(`${proxyPath}?url=` + encodeURIComponent(url), options);
+        if (res.ok) {
+            if (isText) return await res.text();
+            return res;
+        }
+    } catch (e) {
+        console.warn("Internal proxy failed, falling back to public rotation...");
     }
 
     // Priority 2: Random rotation of public proxies
     const shuffledProxies = [...CONFIG.PROXIES].sort(() => Math.random() - 0.5);
-
     for (const proxy of shuffledProxies) {
         try {
             const needsEncoding = proxy.includes('allorigins') || proxy.includes('codetabs');
@@ -41,7 +44,6 @@ async function fetchWithRetry(url, options = {}, isText = false) {
             if (res.ok) {
                 if (isText) {
                     let text = await res.text();
-                    // Handle AllOrigins JSON wrapper
                     if (proxy.includes('allorigins')) {
                         try {
                             const json = JSON.parse(text);
@@ -52,7 +54,6 @@ async function fetchWithRetry(url, options = {}, isText = false) {
                 }
                 return res;
             }
-            console.warn(`Proxy ${proxy} returned ${res.status}`);
         } catch (e) {
             lastError = e;
             console.warn(`Proxy ${proxy} failed:`, e);
@@ -186,7 +187,6 @@ async function loadArtists() {
 
 async function loadForYou() {
     const cont = UI.library.lists.foryou;
-    if (cont.hasChildNodes() && cont.children.length > 1) return;
     cont.innerHTML = '<div style="display:flex; justify-content:center; padding:40px;"><div class="loading-spinner"></div></div>';
     try {
         const text = await fetchWithRetry(`${CONFIG.SCRIPT_URL}?action=getCards`, {}, true);
@@ -194,22 +194,44 @@ async function loadForYou() {
         cont.innerHTML = '';
         data.sort(() => 0.5 - Math.random()).forEach(item => {
             const card = document.createElement('div'); card.className = 'artist-media-card';
-            const photo = (item.photos && item.photos.length) ? item.photos[item.photos.length - 1] : null;
+
+            // Fix parsing for executor, photo, and track
+            const artistName = item.executor || "Unknown Artist";
+            const photos = (item.photo || "").split(',').map(s => s.trim()).filter(s => s);
+            const photo = photos.length ? photos[photos.length - 1] : null;
+
             const photoHtml = photo ? `<img src="${photo}" class="artist-media-photo">` : `<div class="artist-media-photo" style="display:flex; align-items:center; justify-content:center;"><span class="material-symbols-outlined" style="font-size:48px; opacity:0.3;">person</span></div>`;
+
+            const tracksList = (item.track || "").split(',').map(s => {
+                const url = s.trim().split(' ')[0];
+                if (!url) return null;
+                // Try to extract title from URL
+                let title = "Track";
+                try {
+                    const parts = url.split('/');
+                    const filename = decodeURIComponent(parts[parts.length - 1].split('?')[0]);
+                    title = filename.replace(/\.mp3$/i, '').replace(/^Edited_/, '').replace(/-/g, ' ');
+                } catch (e) { }
+                return { title, url };
+            }).filter(t => t);
+
             let rows = '';
-            item.tracks.forEach(t => {
+            tracksList.forEach(t => {
                 const sT = t.title.replace(/'/g, "\\'");
-                const sA = item.name.replace(/'/g, "\\'");
+                const sA = artistName.replace(/'/g, "\\'");
                 rows += `<div class="track-row" onclick="playRemote('${sT}', '${sA}', '${t.url}')">
                     <div class="track-cover gradient-cover online"><span class="material-symbols-outlined">public</span></div>
-                    <div class="track-info"><div class="track-title">${t.title}</div><div class="track-artist">${item.name}</div></div>
+                    <div class="track-info"><div class="track-title">${t.title}</div><div class="track-artist">${artistName}</div></div>
                     <button class="track-action color-pink" onclick="event.stopPropagation(); window.dlSaveTarget('${sT}', '${sA}', '${t.url}')"><span class="material-symbols-outlined">cloud_download</span></button>
                 </div>`;
             });
-            card.innerHTML = `${photoHtml}<div class="artist-media-content"><div class="artist-media-title">${item.name}</div><div class="track-list">${rows}</div></div>`;
+            card.innerHTML = `${photoHtml}<div class="artist-media-content"><div class="artist-media-title">${artistName}</div><div class="track-list">${rows}</div></div>`;
             cont.appendChild(card);
         });
-    } catch (e) { cont.innerHTML = '<div style="text-align:center; padding:40px; opacity:0.5;">Recommendations unavailable</div>'; }
+    } catch (e) {
+        console.error("For You load error:", e);
+        cont.innerHTML = '<div style="text-align:center; padding:40px; opacity:0.5;">Recommendations unavailable</div>';
+    }
 }
 window.dlSaveTarget = (t, a, u) => dlSave({ title: t, artist: a, filePath: u });
 
