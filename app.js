@@ -6,6 +6,8 @@ const CONFIG = {
     PROXIES: [
         "https://api.allorigins.win/raw?url=",
         "https://api.codetabs.com/v1/proxy?quest=",
+        "https://cors-proxy.htmldriven.com/?url=",
+        "https://thingproxy.freeboard.io/fetch/",
         "https://corsproxy.io/?",
         "https://corsproxy.org/?"
     ],
@@ -26,9 +28,12 @@ async function fetchWithRetry(url, options = {}, isText = false) {
         } catch (e) { console.warn("Local proxy failed, trying external..."); }
     }
 
-    for (const proxy of CONFIG.PROXIES) {
+    // Shuffle proxies for better reliability
+    const shuffledProxies = [...CONFIG.PROXIES].sort(() => Math.random() - 0.5);
+
+    for (const proxy of shuffledProxies) {
         try {
-            const proxiedUrl = proxy + (proxy.includes('allorigins') || proxy.includes('codetabs') ? encodeURIComponent(url) : url);
+            const proxiedUrl = proxy + (proxy.includes('allorigins') || proxy.includes('codetabs') || proxy.includes('htmldriven') ? encodeURIComponent(url) : url);
             const res = await fetch(proxiedUrl, options);
             if (res.ok) return isText ? res.text() : res;
             console.warn(`Proxy ${proxy} returned ${res.status}`);
@@ -46,44 +51,8 @@ let curIdx = -1;
 let isShuffle = false;
 let blobUrl = null;
 
-const UI = {
-    navItems: document.querySelectorAll('.nav-item'),
-    screens: document.querySelectorAll('.screen'),
-    toast: document.getElementById('global-toast'),
-    library: {
-        tabs: document.querySelectorAll('.sub-tab-btn'),
-        subScreens: document.querySelectorAll('.sub-screen'),
-        lists: {
-            tracks: document.getElementById('local-tracks-list'),
-            artists: document.getElementById('artists-list'),
-            foryou: document.getElementById('foryou-list'),
-            online: document.getElementById('online-results-list')
-        },
-        search: {
-            container: document.getElementById('library-search-container'),
-            input: document.getElementById('library-search-input')
-        },
-        btnShuffle: document.getElementById('btn-toggle-shuffle'),
-        btnChart: document.getElementById('btn-play-chart'),
-        chartSpinner: document.querySelector('.chart-spinner')
-    },
-    player: {
-        audio: document.getElementById('audio-player'),
-        mini: document.getElementById('player-mini'),
-        full: document.getElementById('player-full'),
-        miniTitle: document.getElementById('mini-title'),
-        miniArtist: document.getElementById('mini-artist'),
-        fullTitle: document.getElementById('full-title'),
-        fullArtist: document.getElementById('full-artist'),
-        btnMiniPlay: document.getElementById('btn-mini-play'),
-        iconMiniPlay: document.getElementById('icon-mini-play'),
-        btnFullPlay: document.getElementById('btn-full-play'),
-        iconFullPlay: document.getElementById('icon-full-play'),
-        seekbar: document.getElementById('player-seekbar'),
-        timeCurrent: document.getElementById('time-current'),
-        timeDuration: document.getElementById('time-duration')
-    }
-};
+// UI object initialized in initApp to ensure DOM is ready
+let UI = {};
 
 // --- DATABASE ---
 function initDB() {
@@ -124,17 +93,18 @@ function deleteTrack(id) {
 
 // --- TOAST ---
 function showToast(msg) {
-    UI.toast.textContent = msg;
-    UI.toast.classList.remove('hidden');
-    setTimeout(() => UI.toast.classList.add('hidden'), 3000);
+    if (UI.toast) {
+        UI.toast.textContent = msg;
+        UI.toast.classList.remove('hidden');
+        setTimeout(() => UI.toast.classList.add('hidden'), 3000);
+    }
 }
 
 // --- NAVIGATION ---
 function initNav() {
-    const navItems = document.querySelectorAll('.nav-item');
-    navItems.forEach(item => {
+    UI.navItems.forEach(item => {
         item.addEventListener('click', () => {
-            navItems.forEach(i => i.classList.remove('active'));
+            UI.navItems.forEach(i => i.classList.remove('active'));
             item.classList.add('active');
             UI.screens.forEach(s => s.classList.remove('active'));
             const target = document.getElementById(item.dataset.target);
@@ -190,11 +160,11 @@ async function loadArtists() {
 
 async function loadForYou() {
     const cont = UI.library.lists.foryou;
-    if (cont.hasChildNodes()) return;
+    if (cont.hasChildNodes() && cont.innerHTML !== '<div style="display:flex; justify-content:center; padding:40px;"><div class="loading-spinner"></div></div>') return;
     cont.innerHTML = '<div style="display:flex; justify-content:center; padding:40px;"><div class="loading-spinner"></div></div>';
     try {
-        const res = await fetch(`${CONFIG.SCRIPT_URL}?action=getCards`);
-        const data = await res.json();
+        const res = await fetchWithRetry(`${CONFIG.SCRIPT_URL}?action=getCards`, {}, true);
+        const data = JSON.parse(res);
         cont.innerHTML = '';
         data.sort(() => 0.5 - Math.random()).forEach(item => {
             const card = document.createElement('div'); card.className = 'artist-media-card';
@@ -202,7 +172,9 @@ async function loadForYou() {
             const photoHtml = photo ? `<img src="${photo}" class="artist-media-photo">` : `<div class="artist-media-photo" style="display:flex; align-items:center; justify-content:center;"><span class="material-symbols-outlined" style="font-size:48px; opacity:0.3;">person</span></div>`;
             let rows = '';
             item.tracks.forEach(t => {
-                rows += `<div class="track-row" onclick="playRemote('${t.title.replace(/'/g, "")}', '${item.name.replace(/'/g, "")}', '${t.url}')">
+                const safeTitle = t.title.replace(/'/g, "\\'");
+                const safeArtist = item.name.replace(/'/g, "\\'");
+                rows += `<div class="track-row" onclick="playRemote('${safeTitle}', '${safeArtist}', '${t.url}')">
                     <div class="track-cover gradient-cover online"><span class="material-symbols-outlined">public</span></div>
                     <div class="track-info"><div class="track-title">${t.title}</div><div class="track-artist">${item.name}</div></div>
                     <button class="track-action color-pink"><span class="material-symbols-outlined">cloud_download</span></button>
@@ -211,7 +183,7 @@ async function loadForYou() {
             card.innerHTML = `${photoHtml}<div class="artist-media-content"><div class="artist-media-title">${item.name}</div><div class="track-list">${rows}</div></div>`;
             cont.appendChild(card);
         });
-    } catch (e) { cont.innerHTML = 'Error loading recommendations'; }
+    } catch (e) { cont.innerHTML = '<div style="text-align:center; padding:40px; opacity:0.5;">Error loading recommendations</div>'; }
 }
 
 async function searchOnline(q) {
@@ -222,7 +194,7 @@ async function searchOnline(q) {
         res.forEach((t, i) => {
             UI.library.lists.online.appendChild(createRow(t, true, () => playList(res, i), (e) => { e.stopPropagation(); dlSave(t); }));
         });
-    } catch (e) { UI.library.lists.online.innerHTML = 'Search error'; }
+    } catch (e) { UI.library.lists.online.innerHTML = '<div style="text-align:center; padding:40px; opacity:0.5;">Search failed. Try again.</div>'; }
 }
 
 async function fetchMuzofond(q) {
@@ -277,13 +249,15 @@ async function playCur() {
     if (t.blob) { blobUrl = URL.createObjectURL(t.blob); UI.player.audio.src = blobUrl; }
     else {
         // Rotational proxy for direct playback
-        let proxied = false;
-        for (const proxy of CONFIG.PROXIES) {
-            const url = proxy + (proxy.includes('allorigins') || proxy.includes('codetabs') ? encodeURIComponent(t.filePath) : t.filePath);
+        let success = false;
+        const shuffledProxies = [...CONFIG.PROXIES].sort(() => Math.random() - 0.5);
+        for (const proxy of shuffledProxies) {
+            const url = proxy + (proxy.includes('allorigins') || proxy.includes('codetabs') || proxy.includes('htmldriven') ? encodeURIComponent(t.filePath) : t.filePath);
             UI.player.audio.src = url;
-            proxied = true;
+            success = true;
             break;
         }
+        if (!success) showToast("Playback error");
     }
     UI.player.audio.play().catch(() => { });
     if ('mediaSession' in navigator) {
@@ -347,9 +321,11 @@ function initForms() {
             for (let i = 0; i < list.length; i++) {
                 const q = `${list[i].artist} ${list[i].title}`;
                 document.getElementById('import-status-text').textContent = `Processing (${i + 1}/${list.length})`;
-                const res = await fetchMuzofond(q);
-                if (res.length) { await dlSave(res[0]); log.innerHTML += `<div style="font-size:12px; opacity:0.7;">✓ Saved: ${res[0].artist} - ${res[0].title}</div>`; }
-                else { log.innerHTML += `<div style="font-size:12px; color:#E57373;">✗ Not found: ${q}</div>`; }
+                try {
+                    const res = await fetchMuzofond(q);
+                    if (res.length) { await dlSave(res[0]); log.innerHTML += `<div style="font-size:12px; opacity:0.7;">✓ Saved: ${res[0].artist} - ${res[0].title}</div>`; }
+                    else { log.innerHTML += `<div style="font-size:12px; color:#E57373;">✗ Not found: ${q}</div>`; }
+                } catch (e) { log.innerHTML += `<div style="font-size:12px; color:#E57373;">✗ Network Error: ${q}</div>`; }
                 fill.style.width = `${((i + 1) / list.length) * 100}%`;
                 await new Promise(r => setTimeout(r, 800));
             }
@@ -389,7 +365,49 @@ function initForms() {
 }
 
 // --- INIT ---
+function initUI() {
+    UI = {
+        navItems: document.querySelectorAll('.nav-item'),
+        screens: document.querySelectorAll('.screen'),
+        toast: document.getElementById('global-toast'),
+        library: {
+            tabs: document.querySelectorAll('.sub-tab-btn'),
+            subScreens: document.querySelectorAll('.sub-screen'),
+            lists: {
+                tracks: document.getElementById('local-tracks-list'),
+                artists: document.getElementById('artists-list'),
+                foryou: document.getElementById('foryou-list'),
+                online: document.getElementById('online-results-list')
+            },
+            search: {
+                container: document.getElementById('library-search-container'),
+                input: document.getElementById('library-search-input')
+            },
+            btnShuffle: document.getElementById('btn-toggle-shuffle'),
+            btnChart: document.getElementById('btn-play-chart'),
+            chartSpinner: document.querySelector('.chart-spinner')
+        },
+        player: {
+            audio: document.getElementById('audio-player'),
+            mini: document.getElementById('player-mini'),
+            full: document.getElementById('player-full'),
+            miniTitle: document.getElementById('mini-title'),
+            miniArtist: document.getElementById('mini-artist'),
+            fullTitle: document.getElementById('full-title'),
+            fullArtist: document.getElementById('full-artist'),
+            btnMiniPlay: document.getElementById('btn-mini-play'),
+            iconMiniPlay: document.getElementById('icon-mini-play'),
+            btnFullPlay: document.getElementById('btn-full-play'),
+            iconFullPlay: document.getElementById('icon-full-play'),
+            seekbar: document.getElementById('player-seekbar'),
+            timeCurrent: document.getElementById('time-current'),
+            timeDuration: document.getElementById('time-duration')
+        }
+    };
+}
+
 function initApp() {
+    initUI();
     initDB().then(() => loadTracks());
     initNav();
     initPlayer();
@@ -407,10 +425,12 @@ function initApp() {
     if (btnPlayChart) {
         btnPlayChart.onclick = async () => {
             UI.library.chartSpinner.classList.remove('hidden');
-            const res = await fetchMuzofond("");
-            UI.library.chartSpinner.classList.add('hidden');
-            const s = res.sort(() => 0.5 - Math.random()).slice(0, 20);
-            if (s.length) { playList(s, 0); showToast("Playing Your Chart"); }
+            try {
+                const res = await fetchMuzofond("");
+                UI.library.chartSpinner.classList.add('hidden');
+                const s = res.sort(() => 0.5 - Math.random()).slice(0, 20);
+                if (s.length) { playList(s, 0); showToast("Playing Your Chart"); }
+            } catch (e) { UI.library.chartSpinner.classList.add('hidden'); showToast("Failed to load Chart"); }
         };
     }
 }
