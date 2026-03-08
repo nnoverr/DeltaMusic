@@ -3,23 +3,42 @@
 /* ========================================= */
 
 const CONFIG = {
-    // Try multiple proxies if one fails
     PROXIES: [
-        "https://corsproxy.io/?",
         "https://api.allorigins.win/raw?url=",
-        "https://cors-anywhere.herokuapp.com/",
-        "/api/proxy?url="
+        "https://corsproxy.io/?",
+        "https://api.codetabs.com/v1/proxy?quest=",
+        "https://corsproxy.org/?"
     ],
-    get PROXY() {
-        return window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-            ? "/api/proxy?url="
-            : this.PROXIES[0];
-    },
     SCRIPT_URL: "https://script.google.com/macros/s/AKfycbw0d4RGncqnwKla0E7YK06xyAD2He5-w-08DZ1QvkbEofRnEg8pv73jLDtdJaXBbucrFA/exec",
     DB_NAME: "DeltaMusicDB",
     DB_VERSION: 3,
     STORE_NAME: "tracks"
 };
+
+// --- UTILS ---
+async function fetchWithRetry(url, options = {}, isText = false) {
+    let lastError;
+    // Localhost fallback
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        try {
+            const res = await fetch("/api/proxy?url=" + encodeURIComponent(url), options);
+            if (res.ok) return isText ? res.text() : res;
+        } catch (e) { console.warn("Local proxy failed, trying external..."); }
+    }
+
+    for (const proxy of CONFIG.PROXIES) {
+        try {
+            const proxiedUrl = proxy + (proxy.includes('allorigins') || proxy.includes('codetabs') ? encodeURIComponent(url) : url);
+            const res = await fetch(proxiedUrl, options);
+            if (res.ok) return isText ? res.text() : res;
+            console.warn(`Proxy ${proxy} returned ${res.status}`);
+        } catch (e) {
+            lastError = e;
+            console.warn(`Proxy ${proxy} failed:`, e);
+        }
+    }
+    throw lastError || new Error("All proxies failed");
+}
 
 let db;
 let playlist = [];
@@ -203,23 +222,9 @@ async function searchOnline(q) {
     } catch (e) { UI.library.lists.online.innerHTML = 'Search error'; }
 }
 
-async function fetchWithRetry(url) {
-    let lastError;
-    for (const proxy of CONFIG.PROXIES) {
-        try {
-            const res = await fetch(proxy + encodeURIComponent(url));
-            if (res.ok) return res;
-        } catch (e) {
-            lastError = e;
-        }
-    }
-    throw lastError || new Error("All proxies failed");
-}
-
 async function fetchMuzofond(q) {
     const target = q ? `https://muzofond.fm/search/${encodeURIComponent(q)}` : `https://muzofond.fm/`;
-    const res = await fetchWithRetry(target);
-    const html = await res.text();
+    const html = await fetchWithRetry(target, {}, true);
     const items = [];
     const blocks = html.split('<li class="item"');
     for (let i = 1; i < blocks.length; i++) {
@@ -269,12 +274,17 @@ async function playCur() {
     if (blobUrl) URL.revokeObjectURL(blobUrl);
     if (t.blob) { blobUrl = URL.createObjectURL(t.blob); audio.src = blobUrl; }
     else {
-        // Find best proxy for direct playback if possible, or just use first working
-        try {
-            audio.src = CONFIG.PROXY + encodeURIComponent(t.filePath);
-        } catch (e) {
-            showToast("Playback error: proxy failed");
+        // Find best proxy for direct playback
+        let success = false;
+        for (const proxy of CONFIG.PROXIES) {
+            try {
+                const url = proxy + (proxy.includes('allorigins') || proxy.includes('codetabs') ? encodeURIComponent(t.filePath) : t.filePath);
+                audio.src = url;
+                success = true;
+                break;
+            } catch (e) { }
         }
+        if (!success) showToast("Playback error: all proxies failed");
     }
     audio.play().catch(() => { });
     if ('mediaSession' in navigator) {
@@ -370,123 +380,34 @@ if (btnRunExecutor) {
 }
 
 // --- INIT ---
-initDB().then(() => loadTracks());
-const searchInput = document.getElementById('library-search-input');
-if (searchInput) {
-    let deb; searchInput.oninput = (e) => { clearTimeout(deb); deb = setTimeout(() => searchOnline(e.target.value.trim()), 1000); };
-}
-const btnShuffle = document.getElementById('btn-toggle-shuffle');
-if (btnShuffle) {
-    btnShuffle.onclick = () => { isShuffle = !isShuffle; UI.library.btnShuffle.classList.toggle('active', isShuffle); };
-}
-const btnPlayChart = document.getElementById('btn-play-chart');
-if (btnPlayChart) {
-    btnPlayChart.onclick = async () => {
-        UI.library.chartSpinner.classList.remove('hidden');
-        const res = await fetchMuzofond("");
-        UI.library.chartSpinner.classList.add('hidden');
-        const s = res.sort(() => 0.5 - Math.random()).slice(0, 20);
-        if (s.length) { playList(s, 0); showToast("Playing Your Chart"); }
-    };
-}
-navigator.mediaSession.setActionHandler('play', togglePlay);
-navigator.mediaSession.setActionHandler('pause', togglePlay);
-navigator.mediaSession.setActionHandler('previoustrack', playPrev);
-navigator.mediaSession.setActionHandler('nexttrack', playNext);
+function initApp() {
+    initDB().then(() => loadTracks());
+
+    const searchInput = document.getElementById('library-search-input');
+    if (searchInput) {
+        let deb; searchInput.oninput = (e) => { clearTimeout(deb); deb = setTimeout(() => searchOnline(e.target.value.trim()), 1000); };
     }
-}
-
-function playTrackList(list, index) {
-    if (!list || list.length === 0) return;
-    currentPlaylist = list;
-    currentIndex = index;
-    loadAndPlayCurrent();
-}
-
-async function loadAndPlayCurrent() {
-    UI.player.mini.style.display = 'flex'; // Ensure visible
-    const track = currentPlaylist[currentIndex];
-
-    UI.player.miniTitle.textContent = track.title;
-    UI.player.miniArtist.textContent = track.artist;
-    UI.player.fullTitle.textContent = track.title;
-    UI.player.fullArtist.textContent = track.artist;
-
-    // Revoke old blob to save memory
-    if (currentBlobUrl) {
-        URL.revokeObjectURL(currentBlobUrl);
-        currentBlobUrl = null;
+    const btnShuffle = document.getElementById('btn-toggle-shuffle');
+    if (btnShuffle) {
+        btnShuffle.onclick = () => { isShuffle = !isShuffle; UI.library.btnShuffle.classList.toggle('active', isShuffle); };
+    }
+    const btnPlayChart = document.getElementById('btn-play-chart');
+    if (btnPlayChart) {
+        btnPlayChart.onclick = async () => {
+            UI.library.chartSpinner.classList.remove('hidden');
+            const res = await fetchMuzofond("");
+            UI.library.chartSpinner.classList.add('hidden');
+            const s = res.sort(() => 0.5 - Math.random()).slice(0, 20);
+            if (s.length) { playList(s, 0); showToast("Playing Your Chart"); }
+        };
     }
 
-    if (track.blob) {
-        currentBlobUrl = URL.createObjectURL(track.blob);
-        UI.player.audio.src = currentBlobUrl;
-    } else if (track.isOnline) {
-        // It's a remote Hitmotop URL, stream via proxy mapping  (Android plays directly, browsers need CORS for media src too sometimes)
-        UI.player.audio.src = CONFIG.PROXY + encodeURIComponent(track.filePath);
-    } else {
-        // Fallback / legacy
-        UI.player.audio.src = track.filePath;
-    }
-
-    try {
-        await UI.player.audio.play();
-    } catch (e) {
-        console.error("Autoplay thwarted", e);
-    }
-
-    // Update MediaSession Meta
     if ('mediaSession' in navigator) {
-        navigator.mediaSession.metadata = new MediaMetadata({
-            title: track.title,
-            artist: track.artist,
-            album: track.genre || 'DeltaMusic',
-            artwork: [
-                { src: 'icons/icon-512x512.png', sizes: '512x512', type: 'image/png' }
-            ]
-        });
+        navigator.mediaSession.setActionHandler('play', toggle);
+        navigator.mediaSession.setActionHandler('pause', toggle);
+        navigator.mediaSession.setActionHandler('previoustrack', playPrev);
+        navigator.mediaSession.setActionHandler('nexttrack', playNext);
     }
 }
 
-function playNext() {
-    if (currentPlaylist.length === 0) return;
-    if (isShuffle) {
-        currentIndex = Math.floor(Math.random() * currentPlaylist.length);
-    } else {
-        currentIndex = (currentIndex + 1) % currentPlaylist.length;
-    }
-    loadAndPlayCurrent();
-}
-
-function playPrev() {
-    if (currentPlaylist.length === 0) return;
-    currentIndex = (currentIndex - 1 + currentPlaylist.length) % currentPlaylist.length;
-    loadAndPlayCurrent();
-}
-
-function updateMediaSessionState(isPlaying) {
-    if ('mediaSession' in navigator) {
-        navigator.mediaSession.playbackState = isPlaying ? "playing" : "paused";
-    }
-}
-
-// ==========================================
-// Utilities
-// ==========================================
-function formatTime(seconds) {
-    if (isNaN(seconds)) return "0:00";
-    const m = Math.floor(seconds / 60);
-    const s = Math.floor(seconds % 60);
-    return `${m}:${s < 10 ? '0' : ''}${s}`;
-}
-
-function showToast(msg) {
-    UI.toast.textContent = msg;
-    UI.toast.classList.remove('hidden');
-    setTimeout(() => {
-        UI.toast.classList.add('hidden');
-    }, 3000);
-}
-
-// Bootstrap
 document.addEventListener('DOMContentLoaded', initApp);
