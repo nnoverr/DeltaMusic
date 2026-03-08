@@ -41,7 +41,7 @@ async function fetchWithRetry(url, options = {}, isText = false) {
             if (res.ok) {
                 if (isText) {
                     let text = await res.text();
-                    // AllOrigins can return a JSON with a 'contents' field
+                    // Handle AllOrigins JSON wrapper
                     if (proxy.includes('allorigins')) {
                         try {
                             const json = JSON.parse(text);
