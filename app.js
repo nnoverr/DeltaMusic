@@ -5,8 +5,8 @@
 const CONFIG = {
     PROXIES: [
         "https://api.allorigins.win/raw?url=",
-        "https://corsproxy.io/?",
         "https://api.codetabs.com/v1/proxy?quest=",
+        "https://corsproxy.io/?",
         "https://corsproxy.org/?"
     ],
     SCRIPT_URL: "https://script.google.com/macros/s/AKfycbw0d4RGncqnwKla0E7YK06xyAD2He5-w-08DZ1QvkbEofRnEg8pv73jLDtdJaXBbucrFA/exec",
@@ -130,33 +130,36 @@ function showToast(msg) {
 }
 
 // --- NAVIGATION ---
-UI.navItems.forEach(item => {
-    item.addEventListener('click', () => {
-        UI.navItems.forEach(i => i.classList.remove('active'));
-        item.classList.add('active');
-        UI.screens.forEach(s => s.classList.remove('active'));
-        const target = document.getElementById(item.dataset.target);
-        if (target) target.classList.add('active');
-        if (item.dataset.target === 'screen-library') loadTracks();
+function initNav() {
+    const navItems = document.querySelectorAll('.nav-item');
+    navItems.forEach(item => {
+        item.addEventListener('click', () => {
+            navItems.forEach(i => i.classList.remove('active'));
+            item.classList.add('active');
+            UI.screens.forEach(s => s.classList.remove('active'));
+            const target = document.getElementById(item.dataset.target);
+            if (target) target.classList.add('active');
+            if (item.dataset.target === 'screen-library') loadTracks();
+        });
     });
-});
 
-UI.library.tabs.forEach(btn => {
-    btn.addEventListener('click', () => {
-        UI.library.tabs.forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        UI.library.subScreens.forEach(s => s.classList.remove('active'));
-        const subtab = document.getElementById(`subtab-${btn.dataset.subtab}`);
-        if (subtab) subtab.classList.add('active');
+    UI.library.tabs.forEach(btn => {
+        btn.addEventListener('click', () => {
+            UI.library.tabs.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            UI.library.subScreens.forEach(s => s.classList.remove('active'));
+            const subtab = document.getElementById(`subtab-${btn.dataset.subtab}`);
+            if (subtab) subtab.classList.add('active');
 
-        UI.library.search.container.classList.toggle('hidden', btn.dataset.subtab !== 'online');
+            UI.library.search.container.classList.toggle('hidden', btn.dataset.subtab !== 'online');
 
-        if (btn.dataset.subtab === 'online' && !UI.library.lists.online.hasChildNodes()) searchOnline("");
-        if (btn.dataset.subtab === 'tracks') loadTracks();
-        if (btn.dataset.subtab === 'artists') loadArtists();
-        if (btn.dataset.subtab === 'foryou') loadForYou();
+            if (btn.dataset.subtab === 'online' && !UI.library.lists.online.hasChildNodes()) searchOnline("");
+            if (btn.dataset.subtab === 'tracks') loadTracks();
+            if (btn.dataset.subtab === 'artists') loadArtists();
+            if (btn.dataset.subtab === 'foryou') loadForYou();
+        });
     });
-});
+}
 
 // --- LOGIC ---
 async function loadTracks() {
@@ -264,7 +267,6 @@ function createRow(t, online, onClick, onAction) {
 }
 
 // --- PLAYER ---
-const audio = UI.player.audio;
 function playList(list, i) { playlist = list; curIdx = i; playCur(); }
 async function playCur() {
     const t = playlist[curIdx];
@@ -272,21 +274,18 @@ async function playCur() {
     UI.player.miniArtist.textContent = UI.player.fullArtist.textContent = t.artist;
     UI.player.mini.classList.remove('hidden');
     if (blobUrl) URL.revokeObjectURL(blobUrl);
-    if (t.blob) { blobUrl = URL.createObjectURL(t.blob); audio.src = blobUrl; }
+    if (t.blob) { blobUrl = URL.createObjectURL(t.blob); UI.player.audio.src = blobUrl; }
     else {
-        // Find best proxy for direct playback
-        let success = false;
+        // Rotational proxy for direct playback
+        let proxied = false;
         for (const proxy of CONFIG.PROXIES) {
-            try {
-                const url = proxy + (proxy.includes('allorigins') || proxy.includes('codetabs') ? encodeURIComponent(t.filePath) : t.filePath);
-                audio.src = url;
-                success = true;
-                break;
-            } catch (e) { }
+            const url = proxy + (proxy.includes('allorigins') || proxy.includes('codetabs') ? encodeURIComponent(t.filePath) : t.filePath);
+            UI.player.audio.src = url;
+            proxied = true;
+            break;
         }
-        if (!success) showToast("Playback error: all proxies failed");
     }
-    audio.play().catch(() => { });
+    UI.player.audio.play().catch(() => { });
     if ('mediaSession' in navigator) {
         navigator.mediaSession.metadata = new MediaMetadata({ title: t.title, artist: t.artist });
     }
@@ -294,94 +293,107 @@ async function playCur() {
 function playNext() { curIdx = isShuffle ? Math.floor(Math.random() * playlist.length) : (curIdx + 1) % playlist.length; playCur(); }
 function playPrev() { curIdx = (curIdx - 1 + playlist.length) % playlist.length; playCur(); }
 
-audio.ontimeupdate = () => { if (audio.duration) { UI.player.seekbar.value = (audio.currentTime / audio.duration) * 100; UI.player.timeCurrent.textContent = fmt(audio.currentTime); } };
-audio.onloadedmetadata = () => { UI.player.timeDuration.textContent = fmt(audio.duration); };
-audio.onended = playNext;
-UI.player.seekbar.oninput = (e) => { if (audio.duration) audio.currentTime = audio.duration * (e.target.value / 100); };
+function initPlayer() {
+    const audio = UI.player.audio;
+    audio.ontimeupdate = () => { if (audio.duration) { UI.player.seekbar.value = (audio.currentTime / audio.duration) * 100; UI.player.timeCurrent.textContent = fmt(audio.currentTime); } };
+    audio.onloadedmetadata = () => { UI.player.timeDuration.textContent = fmt(audio.duration); };
+    audio.onended = playNext;
+    UI.player.seekbar.oninput = (e) => { if (audio.duration) audio.currentTime = audio.duration * (e.target.value / 100); };
 
-const toggle = () => audio.paused ? audio.play() : audio.pause();
-UI.player.btnMiniPlay.onclick = (e) => { e.stopPropagation(); toggle(); };
-UI.player.btnFullPlay.onclick = toggle;
-document.getElementById('btn-full-next').onclick = playNext;
-document.getElementById('btn-full-prev').onclick = playPrev;
+    const toggle = () => audio.paused ? audio.play() : audio.pause();
+    UI.player.btnMiniPlay.onclick = (e) => { e.stopPropagation(); toggle(); };
+    UI.player.btnFullPlay.onclick = toggle;
+    document.getElementById('btn-full-next').onclick = playNext;
+    document.getElementById('btn-full-prev').onclick = playPrev;
 
-audio.onplay = () => UI.player.iconMiniPlay.textContent = UI.player.iconFullPlay.textContent = 'pause';
-audio.onpause = () => UI.player.iconMiniPlay.textContent = UI.player.iconFullPlay.textContent = 'play_arrow';
+    audio.onplay = () => UI.player.iconMiniPlay.textContent = UI.player.iconFullPlay.textContent = 'pause';
+    audio.onpause = () => UI.player.iconMiniPlay.textContent = UI.player.iconFullPlay.textContent = 'play_arrow';
 
-UI.player.mini.onclick = () => UI.player.full.classList.remove('hidden');
-document.getElementById('btn-full-collapse').onclick = () => UI.player.full.classList.add('hidden');
-document.getElementById('btn-full-close').onclick = () => { audio.pause(); audio.src = ''; UI.player.mini.classList.add('hidden'); UI.player.full.classList.add('hidden'); };
+    UI.player.mini.onclick = () => UI.player.full.classList.remove('hidden');
+    document.getElementById('btn-full-collapse').onclick = () => UI.player.full.classList.add('hidden');
+    document.getElementById('btn-full-close').onclick = () => { audio.pause(); audio.src = ''; UI.player.mini.classList.add('hidden'); UI.player.full.classList.add('hidden'); };
+
+    if ('mediaSession' in navigator) {
+        navigator.mediaSession.setActionHandler('play', toggle);
+        navigator.mediaSession.setActionHandler('pause', toggle);
+        navigator.mediaSession.setActionHandler('previoustrack', playPrev);
+        navigator.mediaSession.setActionHandler('nexttrack', playNext);
+    }
+}
 
 function fmt(s) { const m = Math.floor(s / 60), sec = Math.floor(s % 60); return m + ':' + (sec < 10 ? '0' : '') + sec; }
 
-// --- IMPORT ---
-const btnRunImport = document.getElementById('btn-run-import');
-if (btnRunImport) {
-    btnRunImport.onclick = async () => {
-        const val = document.getElementById('import-input').value.trim();
-        if (!val) return;
-        const log = document.getElementById('import-results'); log.innerHTML = '';
-        const status = document.getElementById('import-status'); status.classList.remove('hidden');
-        const prog = document.getElementById('import-progress-container'); prog.classList.remove('hidden');
-        const fill = document.getElementById('import-progress-fill'); fill.style.width = '0%';
+// --- IMPORT & EXECUTOR ---
+function initForms() {
+    const btnRunImport = document.getElementById('btn-run-import');
+    if (btnRunImport) {
+        btnRunImport.onclick = async () => {
+            const val = document.getElementById('import-input').value.trim();
+            if (!val) return;
+            const log = document.getElementById('import-results'); log.innerHTML = '';
+            document.getElementById('import-status').classList.remove('hidden');
+            const fill = document.getElementById('import-progress-fill'); fill.style.width = '0%';
 
-        let list = [];
-        if (val.includes('data-title="')) {
-            const re = /data-title="(.*?)".*?data-artist="(.*?)"/g; let m;
-            while ((m = re.exec(val))) list.push({ title: m[1].trim(), artist: m[2].trim() });
-        } else {
-            val.split('\n').filter(l => l.trim()).forEach(l => {
-                const p = l.split('-'); if (p.length >= 2) list.push({ artist: p[0].trim(), title: p.slice(1).join('-').trim() });
-            });
-        }
-        btnRunImport.disabled = true;
-        for (let i = 0; i < list.length; i++) {
-            const q = `${list[i].artist} ${list[i].title}`;
-            document.getElementById('import-status-text').textContent = `Processing (${i + 1}/${list.length})`;
-            const res = await fetchMuzofond(q);
-            if (res.length) { await dlSave(res[0]); log.innerHTML += `<div style="font-size:12px; opacity:0.7;">✓ Saved: ${res[0].artist} - ${res[0].title}</div>`; }
-            else { log.innerHTML += `<div style="font-size:12px; color:#E57373;">✗ Not found: ${q}</div>`; }
-            fill.style.width = `${((i + 1) / list.length) * 100}%`;
-            await new Promise(r => setTimeout(r, 800));
-        }
-        btnRunImport.disabled = false;
-        status.classList.add('hidden');
-    };
-}
-
-// --- EXECUTOR ---
-const btnRunExecutor = document.getElementById('btn-run-executor');
-if (btnRunExecutor) {
-    btnRunExecutor.onclick = async () => {
-        btnRunExecutor.disabled = true;
-        const resEl = document.getElementById('executor-results');
-        const msg = (s, ok) => {
-            const st = document.getElementById('exec-status'); st.textContent = s; st.className = ok ? 'hidden' : '';
-            st.style.background = ok ? 'rgba(76,175,80,0.2)' : 'rgba(244,67,54,0.2)';
-            st.style.color = ok ? '#81C784' : '#E57373'; st.classList.remove('hidden');
-            resEl.innerHTML = `<div style="font-size:12px; color:${ok ? '#81C784' : '#E57373'}">[${new Date().toLocaleTimeString()}] ${s}</div>` + resEl.innerHTML;
+            let list = [];
+            if (val.includes('data-title="')) {
+                const re = /data-title="(.*?)".*?data-artist="(.*?)"/g; let m;
+                while ((m = re.exec(val))) list.push({ title: m[1].trim(), artist: m[2].trim() });
+            } else {
+                val.split('\n').filter(l => l.trim()).forEach(l => {
+                    const p = l.split('-'); if (p.length >= 2) list.push({ artist: p[0].trim(), title: p.slice(1).join('-').trim() });
+                });
+            }
+            btnRunImport.disabled = true;
+            for (let i = 0; i < list.length; i++) {
+                const q = `${list[i].artist} ${list[i].title}`;
+                document.getElementById('import-status-text').textContent = `Processing (${i + 1}/${list.length})`;
+                const res = await fetchMuzofond(q);
+                if (res.length) { await dlSave(res[0]); log.innerHTML += `<div style="font-size:12px; opacity:0.7;">✓ Saved: ${res[0].artist} - ${res[0].title}</div>`; }
+                else { log.innerHTML += `<div style="font-size:12px; color:#E57373;">✗ Not found: ${q}</div>`; }
+                fill.style.width = `${((i + 1) / list.length) * 100}%`;
+                await new Promise(r => setTimeout(r, 800));
+            }
+            btnRunImport.disabled = false;
+            document.getElementById('import-status').classList.add('hidden');
         };
-        try {
-            const payload = {
-                action: 'upload',
-                artist: document.getElementById('exec-artist').value.trim(),
-                password: document.getElementById('exec-password').value.trim(),
-                photoUrl: document.getElementById('exec-photo').value.trim(),
-                title: document.getElementById('exec-title').value.trim(),
-                url: document.getElementById('exec-url').value.trim()
+    }
+
+    const btnRunExecutor = document.getElementById('btn-run-executor');
+    if (btnRunExecutor) {
+        btnRunExecutor.onclick = async () => {
+            btnRunExecutor.disabled = true;
+            const resEl = document.getElementById('executor-results');
+            const msg = (s, ok) => {
+                const st = document.getElementById('exec-status'); st.textContent = s; st.className = ok ? 'hidden' : '';
+                st.style.background = ok ? 'rgba(76,175,80,0.2)' : 'rgba(244,67,54,0.2)';
+                st.style.color = ok ? '#81C784' : '#E57373'; st.classList.remove('hidden');
+                resEl.innerHTML = `<div style="font-size:12px; color:${ok ? '#81C784' : '#E57373'}">[${new Date().toLocaleTimeString()}] ${s}</div>` + resEl.innerHTML;
             };
-            const res = await fetch(CONFIG.SCRIPT_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) });
-            const text = await res.text();
-            if (text.includes('Success')) { msg("Success!", true); document.getElementById('exec-title').value = ''; document.getElementById('exec-url').value = ''; }
-            else msg(text, false);
-        } catch (e) { msg("Error", false); }
-        btnRunExecutor.disabled = false;
-    };
+            try {
+                const payload = {
+                    action: 'upload',
+                    artist: document.getElementById('exec-artist').value.trim(),
+                    password: document.getElementById('exec-password').value.trim(),
+                    photoUrl: document.getElementById('exec-photo').value.trim(),
+                    title: document.getElementById('exec-title').value.trim(),
+                    url: document.getElementById('exec-url').value.trim()
+                };
+                const res = await fetch(CONFIG.SCRIPT_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) });
+                const text = await res.text();
+                if (text.includes('Success')) { msg("Success!", true); document.getElementById('exec-title').value = ''; document.getElementById('exec-url').value = ''; }
+                else msg(text, false);
+            } catch (e) { msg("Error", false); }
+            btnRunExecutor.disabled = false;
+        };
+    }
 }
 
 // --- INIT ---
 function initApp() {
     initDB().then(() => loadTracks());
+    initNav();
+    initPlayer();
+    initForms();
 
     const searchInput = document.getElementById('library-search-input');
     if (searchInput) {
@@ -400,13 +412,6 @@ function initApp() {
             const s = res.sort(() => 0.5 - Math.random()).slice(0, 20);
             if (s.length) { playList(s, 0); showToast("Playing Your Chart"); }
         };
-    }
-
-    if ('mediaSession' in navigator) {
-        navigator.mediaSession.setActionHandler('play', toggle);
-        navigator.mediaSession.setActionHandler('pause', toggle);
-        navigator.mediaSession.setActionHandler('previoustrack', playPrev);
-        navigator.mediaSession.setActionHandler('nexttrack', playNext);
     }
 }
 
