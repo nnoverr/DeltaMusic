@@ -291,29 +291,125 @@ function createRow(t, online, onClick, onAction) {
 }
 
 // --- PLAYER ---
+let lastPlayedId = null;
+
 function playList(list, i) { playlist = list; curIdx = i; playCur(); }
+
 async function playCur() {
+    // 1. Cleanup previous temporary track
+    if (lastPlayedId && lastPlayedId.startsWith('tmp_')) {
+        const track = await getTrackById(lastPlayedId);
+        if (track && track.isTemp) {
+            await deleteTrack(lastPlayedId);
+            console.log("Cleaned up temp track:", lastPlayedId);
+        }
+    }
+
     const t = playlist[curIdx];
+    lastPlayedId = t.id;
+
     UI.player.miniTitle.textContent = UI.player.fullTitle.textContent = t.title;
     UI.player.miniArtist.textContent = UI.player.fullArtist.textContent = t.artist;
     UI.player.mini.classList.remove('hidden');
+
+    // Update Like button state
+    updateLikeUI(t);
+
     if (blobUrl) URL.revokeObjectURL(blobUrl);
 
     if (t.blob) {
         blobUrl = URL.createObjectURL(t.blob);
         UI.player.audio.src = blobUrl;
-    } else {
-        const shuffledProxies = [...CONFIG.PROXIES].sort(() => Math.random() - 0.5);
-        for (const proxy of shuffledProxies) {
-            const needsEncoding = proxy.includes('allorigins') || proxy.includes('codetabs');
-            UI.player.audio.src = proxy + (needsEncoding ? encodeURIComponent(t.filePath) : t.filePath);
-            break;
+    } else if (t.isOnline || t.filePath) {
+        // ONLINE/TEMP MODE: Download to temporary buffer for reliable playback
+        showToast(`Buffering: ${t.title}...`);
+        try {
+            const res = await fetchWithRetry(t.filePath);
+            const blob = await res.blob();
+            const tempId = 'tmp_' + Date.now();
+            const tempTrack = { ...t, id: tempId, blob, isTemp: true };
+            await saveTrack(tempTrack);
+
+            // Update current track in memory to point to the temporary one
+            playlist[curIdx] = tempTrack;
+            lastPlayedId = tempId;
+
+            blobUrl = URL.createObjectURL(blob);
+            UI.player.audio.src = blobUrl;
+        } catch (e) {
+            showToast("Buffering failed");
+            // Fallback to direct proxy stream if download fails
+            const shuffledProxies = [...CONFIG.PROXIES].sort(() => Math.random() - 0.5);
+            for (const proxy of shuffledProxies) {
+                const needsEncoding = proxy.includes('allorigins') || proxy.includes('codetabs');
+                UI.player.audio.src = proxy + (needsEncoding ? encodeURIComponent(t.filePath) : t.filePath);
+                break;
+            }
         }
     }
+
     UI.player.audio.play().catch(() => { });
     if ('mediaSession' in navigator) {
         navigator.mediaSession.metadata = new MediaMetadata({ title: t.title, artist: t.artist });
     }
+}
+
+function updateLikeUI(t) {
+    const btn = document.getElementById('btn-full-like');
+    const icon = document.getElementById('icon-full-like');
+    if (!btn || !icon) return;
+
+    // A track is "liked" if it is NOT temporary (is in the main library)
+    const isLiked = t.id && !t.id.startsWith('tmp_') && !t.isTemp;
+    icon.style.color = isLiked ? 'var(--accent-pink)' : '#fff';
+    icon.style.fontVariationSettings = isLiked ? "'FILL' 1" : "'FILL' 0";
+}
+
+async function toggleLike() {
+    const t = playlist[curIdx];
+    if (!t) return;
+
+    if (t.isTemp || (t.id && t.id.startsWith('tmp_'))) {
+        // Buffer -> Permanent Library
+        const newId = 'loc_' + Date.now();
+        const newTrack = { ...t, id: newId };
+        delete newTrack.isTemp; // Remove the temp flag
+
+        await saveTrack(newTrack);
+
+        // Update current track in playlist so UI stays synced
+        playlist[curIdx] = newTrack;
+        lastPlayedId = newId;
+
+        showToast("Added to Library ❤️");
+    } else {
+        // Permanent -> Remove (Unlike)
+        if (confirm('Remove from library?')) {
+            await deleteTrack(t.id);
+            // Convert current playing to a fake online track so it can continue playing but won't be in library
+            t.id = 'tmp_unliked_' + Date.now();
+            t.isTemp = true;
+            showToast("Removed from Library");
+        }
+    }
+    updateLikeUI(playlist[curIdx]);
+
+    // Explicitly refresh lists if they are active
+    if (document.getElementById('subtab-tracks').classList.contains('active')) {
+        await loadTracks();
+    }
+    if (document.getElementById('subtab-artists').classList.contains('active')) {
+        await loadArtists();
+    }
+}
+
+function getTrackById(id) {
+    return new Promise(res => {
+        const tx = db.transaction(CONFIG.STORE_NAME, 'readonly');
+        const req = tx.objectStore(CONFIG.STORE_NAME).get(id);
+        req.onsuccess = () => res(req.result);
+        req.onerror = () => res(null);
+    });
 }
 function playNext() { curIdx = isShuffle ? Math.floor(Math.random() * playlist.length) : (curIdx + 1) % playlist.length; playCur(); }
 function playPrev() { curIdx = (curIdx - 1 + playlist.length) % playlist.length; playCur(); }
@@ -330,6 +426,7 @@ function initPlayer() {
     UI.player.btnFullPlay.onclick = toggle;
     document.getElementById('btn-full-next').onclick = playNext;
     document.getElementById('btn-full-prev').onclick = playPrev;
+    document.getElementById('btn-full-like').onclick = toggleLike;
 
     audio.onplay = () => UI.player.iconMiniPlay.textContent = UI.player.iconFullPlay.textContent = 'pause';
     audio.onpause = () => UI.player.iconMiniPlay.textContent = UI.player.iconFullPlay.textContent = 'play_arrow';

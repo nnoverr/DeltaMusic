@@ -66,7 +66,7 @@ const server = http.createServer((req, res) => {
         return;
     }
 
-    const reqUrl = new URL(req.url, `http://localhost:${PORT}`);
+    const reqUrl = new URL(req.url, `http://81.177.141.159:${PORT}`);
     if (reqUrl.pathname === '/proxy' || reqUrl.pathname === '/api/proxy') {
         const target = reqUrl.searchParams.get('url');
         if (!target) { res.writeHead(400); res.end('Missing url param'); return; }
@@ -96,5 +96,5 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(PORT, () => {
-    console.log(`\n  DeltaMusic Node Server (CommonJS) running at:\n  http://localhost:${PORT}\n`);
+    console.log(`\n  DeltaMusic Node Server (CommonJS) running at:\n  http://81.177.141.159:${PORT}\n`);
 });

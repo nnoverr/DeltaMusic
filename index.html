@@ -153,12 +153,15 @@
             </div>
         </div>
         <div class="player-full-controls">
+            <button id="btn-full-like" class="icon-button"><span id="icon-full-like" class="material-symbols-outlined"
+                    style="font-size: 32px;">favorite</span></button>
             <button id="btn-full-prev" class="icon-button"><span class="material-symbols-outlined"
                     style="font-size: 40px;">skip_previous</span></button>
             <button id="btn-full-play" class="play-btn"><span id="icon-full-play" class="material-symbols-outlined"
                     style="font-size: 48px; color: #fff;">play_arrow</span></button>
             <button id="btn-full-next" class="icon-button"><span class="material-symbols-outlined"
                     style="font-size: 40px;">skip_next</span></button>
+            <div style="width: 32px;"></div> <!-- Spacer -->
         </div>
     </div>
 
@@ -183,5 +186,152 @@
 
     <script src="app.js"></script>
 </body>
+<!-- Исправления для Chart и кнопки лайка -->
+<script>
+    // Дополнительные исправления для Chart
+    document.addEventListener('DOMContentLoaded', function () {
+        // Исправление для кнопки Chart
+        const chartBtn = document.getElementById('btn-play-chart');
+        if (chartBtn) {
+            const originalClick = chartBtn.onclick;
+            chartBtn.onclick = async function (e) {
+                const spinner = document.querySelector('.chart-spinner');
+                if (spinner) spinner.classList.remove('hidden');
+
+                try {
+                    // Принудительно загружаем чарт
+                    const response = await fetchWithRetry('https://muzofond.fm/', {}, true);
+                    const tracks = parseMuzofondTracks(response);
+
+                    if (tracks.length > 0) {
+                        // Перемешиваем и берем 20 треков
+                        const shuffled = tracks.sort(() => Math.random() - 0.5).slice(0, 20);
+
+                        // Добавляем флаг isOnline для каждого трека
+                        const chartTracks = shuffled.map(track => ({
+                            ...track,
+                            isOnline: true,
+                            isChart: true
+                        }));
+
+                        playList(chartTracks, 0);
+                        showToast('🎵 Ваш чарт готов');
+                    } else {
+                        showToast('Чарт временно недоступен');
+                    }
+                } catch (error) {
+                    console.error('Chart error:', error);
+                    showToast('Ошибка загрузки чарта');
+                } finally {
+                    if (spinner) spinner.classList.add('hidden');
+                }
+            };
+        }
+
+        // Улучшенная очистка временных треков
+        const audio = document.getElementById('audio-player');
+        if (audio) {
+            audio.addEventListener('ended', function () {
+                if (lastPlayedId && lastPlayedId.startsWith('tmp_')) {
+                    deleteTrack(lastPlayedId).catch(() => { });
+                }
+            });
+        }
+
+        // Улучшенная кнопка лайка
+        const likeBtn = document.getElementById('btn-full-like');
+        if (likeBtn) {
+            likeBtn.addEventListener('click', async function () {
+                const t = playlist[curIdx];
+                if (!t) return;
+
+                if (t.isTemp || (t.id && t.id.startsWith('tmp_'))) {
+                    // Сохраняем в библиотеку
+                    const newId = 'loc_' + Date.now();
+                    const newTrack = {
+                        title: t.title,
+                        artist: t.artist,
+                        filePath: t.filePath,
+                        blob: t.blob,
+                        id: newId
+                    };
+
+                    await saveTrack(newTrack);
+                    playlist[curIdx] = newTrack;
+                    lastPlayedId = newId;
+
+                    // Обновляем иконку
+                    const icon = document.getElementById('icon-full-like');
+                    icon.style.color = 'var(--accent-pink)';
+                    icon.style.fontVariationSettings = "'FILL' 1";
+
+                    showToast('❤️ Добавлено в библиотеку');
+                } else {
+                    if (confirm('Удалить из библиотеки?')) {
+                        await deleteTrack(t.id);
+
+                        // Продолжаем воспроизведение как временный
+                        const tempId = 'tmp_' + Date.now();
+                        playlist[curIdx] = {
+                            ...t,
+                            id: tempId,
+                            isTemp: true,
+                            blob: t.blob
+                        };
+                        lastPlayedId = tempId;
+
+                        // Обновляем иконку
+                        const icon = document.getElementById('icon-full-like');
+                        icon.style.color = '#fff';
+                        icon.style.fontVariationSettings = "'FILL' 0";
+
+                        showToast('💔 Удалено из библиотеки');
+                    }
+                }
+            });
+        }
+    });
+
+    // Функция для парсинга треков с muzofond
+    function parseMuzofondTracks(html) {
+        const tracks = [];
+        const blocks = html.split('<li class="item"');
+
+        for (let i = 1; i < blocks.length; i++) {
+            const block = blocks[i];
+            const urlMatch = /data-url="([^"]+)"/.exec(block);
+            const artistMatch = /<span class="artist">([^<]+)<\/span>/.exec(block);
+            const titleMatch = /<span class="track">([^<]+)<\/span>/.exec(block);
+
+            if (urlMatch && artistMatch && titleMatch) {
+                tracks.push({
+                    id: 'net_' + Math.random().toString(36).slice(2),
+                    title: titleMatch[1].trim(),
+                    artist: artistMatch[1].trim(),
+                    filePath: urlMatch[1],
+                    isOnline: true
+                });
+            }
+        }
+
+        return tracks;
+    }
+
+    // Переопределяем функцию fetchMuzofond для чарта
+    const originalFetchMuzofond = window.fetchMuzofond;
+    window.fetchMuzofond = async function (q) {
+        try {
+            const target = q ? `https://muzofond.fm/search/${encodeURIComponent(q)}` : 'https://muzofond.fm/';
+            const html = await fetchWithRetry(target, {}, true);
+            return parseMuzofondTracks(html);
+        } catch (error) {
+            console.error('FetchMuzofond error:', error);
+            return [];
+        }
+    };
+</script>
+</body>
+
+</html>
 
 </html>
