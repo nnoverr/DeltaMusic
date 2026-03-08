@@ -6,10 +6,9 @@ const CONFIG = {
     PROXIES: [
         "https://api.allorigins.win/raw?url=",
         "https://api.codetabs.com/v1/proxy?quest=",
-        "https://cors-proxy.htmldriven.com/?url=",
-        "https://thingproxy.freeboard.io/fetch/",
+        "https://corsproxy.org/?",
         "https://corsproxy.io/?",
-        "https://corsproxy.org/?"
+        "https://thingproxy.freeboard.io/fetch/"
     ],
     SCRIPT_URL: "https://script.google.com/macros/s/AKfycbw0d4RGncqnwKla0E7YK06xyAD2He5-w-08DZ1QvkbEofRnEg8pv73jLDtdJaXBbucrFA/exec",
     DB_NAME: "DeltaMusicDB",
@@ -20,28 +19,47 @@ const CONFIG = {
 // --- UTILS ---
 async function fetchWithRetry(url, options = {}, isText = false) {
     let lastError;
-    // Localhost fallback
-    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
+    // Priority 1: Local Proxy (if available)
+    if (isLocal) {
         try {
             const res = await fetch("/api/proxy?url=" + encodeURIComponent(url), options);
             if (res.ok) return isText ? res.text() : res;
-        } catch (e) { console.warn("Local proxy failed, trying external..."); }
+        } catch (e) { console.warn("Local proxy failed..."); }
     }
 
-    // Shuffle proxies for better reliability
+    // Priority 2: Random rotation of public proxies
     const shuffledProxies = [...CONFIG.PROXIES].sort(() => Math.random() - 0.5);
 
     for (const proxy of shuffledProxies) {
         try {
-            const proxiedUrl = proxy + (proxy.includes('allorigins') || proxy.includes('codetabs') || proxy.includes('htmldriven') ? encodeURIComponent(url) : url);
+            // Some proxies need encoded URLs, some don't.
+            const needsEncoding = proxy.includes('allorigins') || proxy.includes('codetabs');
+            const proxiedUrl = proxy + (needsEncoding ? encodeURIComponent(url) : url);
+
             const res = await fetch(proxiedUrl, options);
-            if (res.ok) return isText ? res.text() : res;
+            if (res.ok) {
+                let data = isText ? await res.text() : res;
+                // AllOrigins wraps the content in a JSON object
+                if (proxy.includes('allorigins') && isText) {
+                    try { data = JSON.parse(data).contents; } catch (e) { }
+                }
+                return data;
+            }
             console.warn(`Proxy ${proxy} returned ${res.status}`);
         } catch (e) {
             lastError = e;
             console.warn(`Proxy ${proxy} failed:`, e);
         }
     }
+
+    // Priority 3: Final attempt via direct fetch (might work if CORS is disabled on target)
+    try {
+        const res = await fetch(url, options);
+        if (res.ok) return isText ? res.text() : res;
+    } catch (e) { }
+
     throw lastError || new Error("All proxies failed");
 }
 
@@ -51,7 +69,6 @@ let curIdx = -1;
 let isShuffle = false;
 let blobUrl = null;
 
-// UI object initialized in initApp to ensure DOM is ready
 let UI = {};
 
 // --- DATABASE ---
@@ -102,9 +119,10 @@ function showToast(msg) {
 
 // --- NAVIGATION ---
 function initNav() {
-    UI.navItems.forEach(item => {
+    const navItems = document.querySelectorAll('.nav-item');
+    navItems.forEach(item => {
         item.addEventListener('click', () => {
-            UI.navItems.forEach(i => i.classList.remove('active'));
+            navItems.forEach(i => i.classList.remove('active'));
             item.classList.add('active');
             UI.screens.forEach(s => s.classList.remove('active'));
             const target = document.getElementById(item.dataset.target);
@@ -160,11 +178,11 @@ async function loadArtists() {
 
 async function loadForYou() {
     const cont = UI.library.lists.foryou;
-    if (cont.hasChildNodes() && cont.innerHTML !== '<div style="display:flex; justify-content:center; padding:40px;"><div class="loading-spinner"></div></div>') return;
+    if (cont.hasChildNodes() && cont.children.length > 1) return;
     cont.innerHTML = '<div style="display:flex; justify-content:center; padding:40px;"><div class="loading-spinner"></div></div>';
     try {
-        const res = await fetchWithRetry(`${CONFIG.SCRIPT_URL}?action=getCards`, {}, true);
-        const data = JSON.parse(res);
+        const html = await fetchWithRetry(`${CONFIG.SCRIPT_URL}?action=getCards`, {}, true);
+        const data = JSON.parse(html);
         cont.innerHTML = '';
         data.sort(() => 0.5 - Math.random()).forEach(item => {
             const card = document.createElement('div'); card.className = 'artist-media-card';
@@ -191,10 +209,14 @@ async function searchOnline(q) {
     try {
         const res = await fetchMuzofond(q);
         UI.library.lists.online.innerHTML = '';
+        if (!res.length) {
+            UI.library.lists.online.innerHTML = '<div style="text-align:center; padding:40px; opacity:0.5;">No tracks found</div>';
+            return;
+        }
         res.forEach((t, i) => {
             UI.library.lists.online.appendChild(createRow(t, true, () => playList(res, i), (e) => { e.stopPropagation(); dlSave(t); }));
         });
-    } catch (e) { UI.library.lists.online.innerHTML = '<div style="text-align:center; padding:40px; opacity:0.5;">Search failed. Try again.</div>'; }
+    } catch (e) { UI.library.lists.online.innerHTML = '<div style="text-align:center; padding:40px; opacity:0.5;">Search service unavailable. Try again.</div>'; }
 }
 
 async function fetchMuzofond(q) {
@@ -246,18 +268,20 @@ async function playCur() {
     UI.player.miniArtist.textContent = UI.player.fullArtist.textContent = t.artist;
     UI.player.mini.classList.remove('hidden');
     if (blobUrl) URL.revokeObjectURL(blobUrl);
-    if (t.blob) { blobUrl = URL.createObjectURL(t.blob); UI.player.audio.src = blobUrl; }
-    else {
+
+    if (t.blob) {
+        blobUrl = URL.createObjectURL(t.blob);
+        UI.player.audio.src = blobUrl;
+    } else {
         // Rotational proxy for direct playback
-        let success = false;
         const shuffledProxies = [...CONFIG.PROXIES].sort(() => Math.random() - 0.5);
+        let success = false;
         for (const proxy of shuffledProxies) {
-            const url = proxy + (proxy.includes('allorigins') || proxy.includes('codetabs') || proxy.includes('htmldriven') ? encodeURIComponent(t.filePath) : t.filePath);
-            UI.player.audio.src = url;
-            success = true;
+            const needsEncoding = proxy.includes('allorigins') || proxy.includes('codetabs');
+            UI.player.audio.src = proxy + (needsEncoding ? encodeURIComponent(t.filePath) : t.filePath);
+            success = true; // Setting src is synchronous, metadata loading will prove if it works
             break;
         }
-        if (!success) showToast("Playback error");
     }
     UI.player.audio.play().catch(() => { });
     if ('mediaSession' in navigator) {
@@ -325,7 +349,7 @@ function initForms() {
                     const res = await fetchMuzofond(q);
                     if (res.length) { await dlSave(res[0]); log.innerHTML += `<div style="font-size:12px; opacity:0.7;">✓ Saved: ${res[0].artist} - ${res[0].title}</div>`; }
                     else { log.innerHTML += `<div style="font-size:12px; color:#E57373;">✗ Not found: ${q}</div>`; }
-                } catch (e) { log.innerHTML += `<div style="font-size:12px; color:#E57373;">✗ Network Error: ${q}</div>`; }
+                } catch (e) { log.innerHTML += `<div style="font-size:12px; color:#E57373;">✗ Error: ${q}</div>`; }
                 fill.style.width = `${((i + 1) / list.length) * 100}%`;
                 await new Promise(r => setTimeout(r, 800));
             }
@@ -365,7 +389,7 @@ function initForms() {
 }
 
 // --- INIT ---
-function initUI() {
+function initApp() {
     UI = {
         navItems: document.querySelectorAll('.nav-item'),
         screens: document.querySelectorAll('.screen'),
@@ -404,10 +428,7 @@ function initUI() {
             timeDuration: document.getElementById('time-duration')
         }
     };
-}
 
-function initApp() {
-    initUI();
     initDB().then(() => loadTracks());
     initNav();
     initPlayer();
@@ -415,7 +436,17 @@ function initApp() {
 
     const searchInput = document.getElementById('library-search-input');
     if (searchInput) {
-        let deb; searchInput.oninput = (e) => { clearTimeout(deb); deb = setTimeout(() => searchOnline(e.target.value.trim()), 1000); };
+        let deb;
+        searchInput.oninput = (e) => {
+            clearTimeout(deb);
+            deb = setTimeout(() => searchOnline(e.target.value.trim()), 1000);
+        };
+        searchInput.onkeydown = (e) => {
+            if (e.key === 'Enter') {
+                clearTimeout(deb);
+                searchOnline(e.target.value.trim());
+            }
+        };
     }
     const btnShuffle = document.getElementById('btn-toggle-shuffle');
     if (btnShuffle) {
@@ -430,7 +461,11 @@ function initApp() {
                 UI.library.chartSpinner.classList.add('hidden');
                 const s = res.sort(() => 0.5 - Math.random()).slice(0, 20);
                 if (s.length) { playList(s, 0); showToast("Playing Your Chart"); }
-            } catch (e) { UI.library.chartSpinner.classList.add('hidden'); showToast("Failed to load Chart"); }
+                else showToast("Chart empty");
+            } catch (e) {
+                UI.library.chartSpinner.classList.add('hidden');
+                showToast("Service error");
+            }
         };
     }
 }
