@@ -10,7 +10,7 @@ const CONFIG = {
         "https://corsproxy.io/?",
         "https://thingproxy.freeboard.io/fetch/"
     ],
-    SCRIPT_URL: "https://script.google.com/macros/s/AKfycbw0d4RGncqnwKla0E7YK06xyAD2He5-w-08DZ1QvkbEofRnEg8pv73jLDtdJaXBbucrFA/exec",
+    SCRIPT_URL: "https://script.google.com/macros/s/AKfycbyJJ0bt-_KN03D_0FzO-BwUdYC-qPz22jFYc7FJYzLliAVObBMwbEsLdBbrbpH0oD1ROA/exec",
     DB_NAME: "DeltaMusicDB",
     DB_VERSION: 3,
     STORE_NAME: "tracks"
